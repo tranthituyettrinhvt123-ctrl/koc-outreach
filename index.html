@@ -89,6 +89,12 @@ textarea{width:100%;resize:vertical;min-height:90px;line-height:1.5}
 .acct .nm{font-weight:600}
 .acct .ct{font:500 12px var(--mono);color:var(--muted)}
 .platform-badge{font:600 11px var(--font);text-transform:uppercase;letter-spacing:.06em;padding:2px 8px;border-radius:6px;color:#fff}
+#login{max-width:380px;margin:12vh auto 0;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:28px 24px;display:flex;flex-direction:column;gap:14px}
+#login h2{margin:0;font-size:20px}
+#login input{width:100%}
+#login .err{color:var(--bad);font-size:13px;margin:0;min-height:1em}
+body.locked main,body.locked .tabs,body.locked #logout{display:none!important}
+body:not(.locked) #login{display:none}
 @media (max-width:720px){
   .koc{grid-template-columns:minmax(0,1fr)}
   .koc .acts{justify-content:flex-start}
@@ -103,6 +109,7 @@ textarea{width:100%;resize:vertical;min-height:90px;line-height:1.5}
 <header>
   <div class="wrap head">
     <h1>KOC Outreach <small id="sync">Đang kết nối…</small></h1>
+    <button class="btn small ghost" id="logout" type="button">Đăng xuất</button>
     <div class="tabs" role="tablist">
       <button class="tab" role="tab" id="tab-zalo" data-p="zalo"><span class="dot" style="background:var(--zalo)"></span>Zalo <span class="n" id="n-zalo">0</span></button>
       <button class="tab" role="tab" id="tab-tiktok" data-p="tiktok"><span class="dot" style="background:var(--tiktok)"></span>TikTok <span class="n" id="n-tiktok">0</span></button>
@@ -111,6 +118,14 @@ textarea{width:100%;resize:vertical;min-height:90px;line-height:1.5}
   </div>
 </header>
 
+<form id="login" class="wrap" autocomplete="on">
+  <h2>Đăng nhập</h2>
+  <p class="hint">Nhập mật khẩu để mở danh sách KOC. Trình duyệt này sẽ nhớ đăng nhập cho lần sau.</p>
+  <input type="text" name="username" value="lucia" autocomplete="username" hidden>
+  <input id="login-pw" type="password" placeholder="Mật khẩu" autocomplete="current-password" required>
+  <p class="err" id="login-err"></p>
+  <button class="btn primary" type="submit" id="login-btn">Đăng nhập</button>
+</form>
 <main class="wrap">
   <div id="banner" class="banner" hidden></div>
 
@@ -158,10 +173,10 @@ textarea{width:100%;resize:vertical;min-height:90px;line-height:1.5}
 
   <section class="drawer" id="d-settings" hidden>
     <h2>Kết nối Google Sheets</h2>
-    <p class="hint">Dán link Web App của Apps Script (dạng <code>https://script.google.com/macros/s/…/exec</code>) để cả team dùng chung dữ liệu. Để trống thì dữ liệu chỉ lưu trong trình duyệt này. Link đã cài sẵn trong file sẽ được dùng mặc định.</p>
+    <p class="hint">Dán link Web App của Apps Script (dạng <code>https://script.google.com/macros/s/…/exec</code>) để lưu dữ liệu trên Google Sheets. Để trống thì dữ liệu chỉ lưu trong trình duyệt này. Link đã cài sẵn trong file sẽ được dùng mặc định.</p>
     <div class="row">
       <input id="cfg-url" class="grow" style="min-width:240px" placeholder="https://script.google.com/macros/s/.../exec">
-      <input id="cfg-key" style="width:160px" placeholder="Mã bảo vệ của team">
+      <input id="cfg-key" style="width:160px" placeholder="Mật khẩu" type="password">
       <button class="btn primary" id="save-cfg">Lưu &amp; tải lại</button>
     </div>
     <div class="row">
@@ -182,11 +197,11 @@ textarea{width:100%;resize:vertical;min-height:90px;line-height:1.5}
 <script>
 /* =====================================================================
    CẤU HÌNH — dán link Web App của Apps Script vào SHEETS_URL trước khi
-   đưa lên Netlify, để cả team mở trang là dùng chung dữ liệu ngay.
+   đưa lên hosting.
    ===================================================================== */
 const CONFIG = {
   SHEETS_URL: "https://script.google.com/macros/s/AKfycbx6WzF1cCoeZsO8PwUodHiis3XF1MkeeELyWzUufycLISpyPxY3P8B2c66JXFeEzFTdvg/exec",   // vd: "https://script.google.com/macros/s/AKfy.../exec"
-  KEY: ""           // mã bảo vệ, phải trùng với KEY trong Apps Script (để trống nếu không dùng)
+  KEY: ""           // để trống: mật khẩu nhập ở màn hình đăng nhập (KEY trong Apps Script)
 };
 
 (function(){
@@ -240,13 +255,13 @@ function applyData(d){
 }
 async function refresh(silent){
   if(pending)return;
-  try{const d=await Store.load();if(pending)return;applyData(d);
+  try{const d=await Store.load();if(pending)return;applyData(d);document.body.classList.remove("locked");
     $("sync").textContent=Store.remote()?"· Google Sheets · "+new Date().toLocaleTimeString("vi-VN",{hour:"2-digit",minute:"2-digit"}):"· Lưu trong trình duyệt";
     $("banner").hidden=Store.remote();
-    if(!Store.remote())$("banner").textContent="Dữ liệu đang lưu trong trình duyệt này, chưa chia sẻ với team. Bấm \"Kết nối Google Sheets\" để dùng chung.";
+    if(!Store.remote())$("banner").textContent="Dữ liệu đang lưu trong trình duyệt này, chưa lưu lên Google Sheets.";
     render();
   }catch(e){$("sync").textContent="· Lỗi kết nối";
-    if(/mã bảo vệ/i.test(e.message)){$("banner").textContent="Cần nhập mã bảo vệ của team: bấm \"⚙ Kết nối Google Sheets\", điền mã rồi bấm Lưu.";$("banner").hidden=false;$("d-settings").hidden=false;$("cfg-url").value=cfg.url;$("cfg-key").value=cfg.key}
+    if(/mã bảo vệ/i.test(e.message)){lock(cfg.key?"Mật khẩu không đúng.":"")}
     else if(!silent)toast("Không tải được dữ liệu từ Google Sheets: "+e.message)}
 }
 async function write(fn,okMsg){
@@ -421,9 +436,13 @@ $("import-file").onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new
 
 window.addEventListener("hashchange",()=>{const p=location.hash.slice(1);if(PLATFORMS.includes(p)){platform=p;render()}});
 
+function lock(msg){document.body.classList.add("locked");$("login-err").textContent=msg||"";$("login-btn").disabled=false;setTimeout(()=>$("login-pw").focus(),50)}
+$("login").addEventListener("submit",async e=>{e.preventDefault();cfg.key=$("login-pw").value.trim();ls.set("cfg-key",cfg.key);$("login-btn").disabled=true;$("login-err").textContent="Đang kiểm tra…";await refresh();$("login-btn").disabled=false;if(!document.body.classList.contains("locked"))$("login-pw").value=""});
+$("logout").onclick=()=>{cfg.key="";ls.set("cfg-key","");kocs=[];accounts=[];templates={};subjects={};render();lock("")};
+if(Store.remote()&&!cfg.key)document.body.classList.add("locked");
 render();
 refresh();
-setInterval(()=>{if(Store.remote()&&!document.hidden)refresh(true)},30000);
+setInterval(()=>{if(Store.remote()&&!document.hidden&&!document.body.classList.contains("locked"))refresh(true)},30000);
 document.addEventListener("visibilitychange",()=>{if(!document.hidden&&Store.remote())refresh(true)});
 })();
 </script>
