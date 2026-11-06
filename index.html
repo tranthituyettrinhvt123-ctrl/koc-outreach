@@ -80,6 +80,18 @@ textarea{width:100%;resize:vertical;min-height:90px;line-height:1.5}
 .s-agreed{color:var(--ok);background-color:var(--ok-bg)}
 .s-declined{color:var(--bad);background-color:var(--bad-bg)}
 .s-noreply{color:var(--idle);background-color:var(--idle-bg)}
+.s-negotiating{color:var(--warn);background-color:var(--warn-bg)}
+.s-unfit{color:var(--idle);background-color:var(--idle-bg)}
+.docs{position:relative}
+.docs summary{list-style:none;cursor:pointer}
+.docs summary::-webkit-details-marker{display:none}
+.docs .menu{position:absolute;z-index:30;top:calc(100% + 6px);left:0;width:min(340px,calc(100vw - 32px));background:var(--surface);border:1px solid var(--line);border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.14);padding:6px;display:flex;flex-direction:column}
+.docs .menu a{display:flex;flex-direction:column;padding:8px 10px;border-radius:8px;color:var(--fg);text-decoration:none}
+.docs .menu a:hover{background:var(--accent-soft)}
+.docs .menu a span{font-size:12px;color:var(--muted)}
+.camp{font:600 11px var(--font);padding:1px 7px;border-radius:6px;background:var(--accent-soft);color:var(--accent);margin-left:6px;white-space:nowrap}
+.more{display:flex;justify-content:center;padding:6px}
+.koc .name a{color:inherit;text-decoration:none}.koc .name a:hover{text-decoration:underline}
 .empty{background:var(--surface);border:1px dashed var(--line);border-radius:14px;padding:32px 20px;text-align:center;color:var(--muted)}
 .empty h3{color:var(--fg);margin:0 0 6px;font-size:16px}
 .banner{border-radius:10px;padding:8px 12px;font-size:13px;background:var(--warn-bg);color:var(--warn)}
@@ -133,6 +145,8 @@ body:not(.locked) #login{display:none}
 <header>
   <div class="wrap head">
     <h1>KOC Outreach <small id="sync">Đang kết nối…</small></h1>
+    <details class="docs" id="docs"><summary class="btn small">Tài liệu ▾</summary><div class="menu" id="docs-menu"></div></details>
+    <button class="btn small" id="sync-now" type="button">Đồng bộ</button>
     <button class="btn small ghost" id="logout" type="button">Đăng xuất</button>
     <div class="tabs" role="tablist">
       <button class="tab" role="tab" id="tab-zalo" data-p="zalo"><span class="dot" style="background:var(--zalo)"></span>Zalo <span class="n" id="n-zalo">0</span></button>
@@ -217,6 +231,7 @@ body:not(.locked) #login{display:none}
   </section>
 
   <div class="row">
+    <select id="camp-sel" aria-label="Chiến dịch"></select>
     <div class="chips" id="chips"></div>
     <input id="q" type="search" placeholder="Tìm tên / liên hệ" class="grow" style="min-width:180px">
   </div>
@@ -237,10 +252,18 @@ const CONFIG = {
 
 (function(){
 const STATUSES=[
-  {k:"new",t:"Chưa gửi"},{k:"sent",t:"Đã gửi"},{k:"replied",t:"Đã trả lời"},
-  {k:"agreed",t:"Đồng ý hợp tác"},{k:"declined",t:"Từ chối"},{k:"noreply",t:"Không phản hồi"}];
+  {k:"new",t:"Chưa liên hệ"},{k:"sent",t:"Đã nhắn tin"},{k:"noreply",t:"Không phản hồi"},{k:"replied",t:"Đã phản hồi"},
+  {k:"negotiating",t:"Đang đàm phán"},{k:"agreed",t:"Đã chốt"},{k:"declined",t:"Từ chối"},{k:"unfit",t:"Không phù hợp"}];
 const SLABEL=Object.fromEntries(STATUSES.map(s=>[s.k,s.t]));
-const SKEY=Object.fromEntries(STATUSES.map(s=>[s.t,s.k]));
+const SKEY=Object.assign({"Chưa gửi":"new","Đã gửi":"sent","Đã trả lời":"replied","Đồng ý hợp tác":"agreed"},Object.fromEntries(STATUSES.map(s=>[s.t,s.k])));
+const DOCS=[
+  {t:"KOC Network",d:"Dự án, booking, mạng lưới creator",u:"https://koc-network-namoi.netlify.app/"},
+  {t:"Danh sách creator · Chấm mụn",d:"Google Sheets (bản chuyển từ .xlsx)",u:"https://docs.google.com/spreadsheets/d/1UclG_eFSXJVgvAeRtNdsD9J2b7dRrBgnBpXdMDM0mEU/edit"},
+  {t:"Danh sách creator · Dưỡng trắng Tết",d:"Google Sheets (bản chuyển từ .xlsx)",u:"https://docs.google.com/spreadsheets/d/1Dwk9mThCWx8Pm93pcMPc4B_YH1Vat3-0-tfOamyLmc0/edit"},
+  {t:"Mail tự động · Chấm mụn",d:"File gửi mail + nhắc",u:"https://docs.google.com/spreadsheets/d/1nputJ5pUsFx7K0UNcC1HuzhBeTjYii0eSg-0U8Nq1MM/edit"},
+  {t:"Mail tự động · Dưỡng trắng Tết",d:"File gửi mail + nhắc",u:"https://docs.google.com/spreadsheets/d/1HFbWt25l22VLpaFkCMj2HffmAqecTjJYywZlB0ErmH0/edit"},
+  {t:"KOC Outreach Data",d:"Dữ liệu của trang này",u:"https://docs.google.com/spreadsheets/d/1qXjkOfOVK-x8Ed0A_kZDmAxoBiRJaDTEiwRmwDimqQo/edit"}];
+let meta={},camp="all",shown=100,syncing=false;
 const PL={
   zalo:{name:"Zalo",contact:"SĐT / link Zalo",def:"Chào {ten}, mình là {taikhoan} bên VTPL. Bên mình đang tìm KOC hợp tác cho chiến dịch mới, bạn có quan tâm không ạ?"},
   tiktok:{name:"TikTok",contact:"@username / link TikTok",def:"Hi {ten}! Mình là {taikhoan} từ VTPL. Bên mình rất thích nội dung của bạn và muốn mời bạn hợp tác một chiến dịch. Bạn có thể để lại Zalo/email để mình gửi chi tiết không ạ?"},
@@ -279,6 +302,7 @@ const Store={
     const r=await fetch(cfg.url,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({...body,key:cfg.key||""})});
     const j=await r.json(); if(j.error)throw new Error(j.error);
   },
+  async sync(){const r=await fetch(cfg.url+"?action=sync&key="+encodeURIComponent(cfg.key||""));const j=await r.json();if(j.error)throw new Error(j.error);return j},
   upsert(sheet,rows){return this.post({action:"upsert",sheet,rows})},
   del(sheet,id){return this.post({action:"delete",sheet,id})}
 };
@@ -287,12 +311,21 @@ function applyData(d){
   kocs=(d.kocs||[]).filter(k=>k.id).map(k=>({...k,status:SKEY[k.status]||k.status||"new",sentAt:+k.sentAt||0,createdAt:+k.createdAt||0}));
   accounts=(d.accounts||[]).filter(a=>a.id).map(a=>({...a,limit:+a.limit||0}));
   templates={};subjects={};(d.templates||[]).forEach(t=>{if(t.id){templates[t.id]=t.text;if(t.subject)subjects[t.id]=t.subject}});
+  meta=d.meta||{};
 }
+async function syncNow(manual){
+  if(!Store.remote()||syncing)return;syncing=true;$("sync-now").disabled=true;$("sync-now").textContent="Đang đồng bộ…";
+  try{const d=await Store.sync();if(!pending){applyData(d);render()}if(manual)toast("Đã đồng bộ với các file danh sách và file gửi mail")}
+  catch(e){toast("Đồng bộ chưa xong: "+e.message)}
+  finally{syncing=false;$("sync-now").disabled=false;$("sync-now").textContent="Đồng bộ";stamp()}
+}
+function stamp(){const t=+meta.lastSync;$("sync").textContent=Store.remote()?(t?"· Đồng bộ lúc "+fmtTime(t):"· Chưa đồng bộ"):"· Lưu trong trình duyệt"}
 async function refresh(silent){
   if(pending)return;
   if(silent&&document.activeElement&&document.activeElement.matches("#list input, #list select"))return;
   try{const d=await Store.load();if(pending)return;applyData(d);document.body.classList.remove("locked");
-    $("sync").textContent=Store.remote()?"· Google Sheets · "+new Date().toLocaleTimeString("vi-VN",{hour:"2-digit",minute:"2-digit"}):"· Lưu trong trình duyệt";
+    stamp();
+    if(Store.remote()&&!silent&&(!+meta.lastSync||Date.now()-meta.lastSync>15*60e3))syncNow(false);
     $("banner").hidden=Store.remote();
     if(!Store.remote())$("banner").textContent="Dữ liệu đang lưu trong trình duyệt này, chưa lưu lên Google Sheets.";
     render();
@@ -357,17 +390,22 @@ function render(){
   const want=ls.get("acct-"+platform)||cur; if(want&&mine.some(a=>a.id===want))sel.value=want;
   $("acct-list").innerHTML=mine.length?mine.map(a=>`<div class="acct"><span class="nm">${esc(a.name)}</span><span class="ct">${counts[a.id]||0}/${a.limit||"∞"}</span><button class="btn ghost small" data-delacct="${esc(a.id)}">${confirmDel==="a:"+a.id?"Bấm lần nữa để xoá":"Xoá"}</button></div>`).join(""):`<p class="hint">Chưa có tài khoản ${PL[platform].name} nào.</p>`;
 
-  const all=kocs.filter(k=>k.platform===platform);
+  $("docs-menu").innerHTML=DOCS.concat(meta.networkId?[{t:"KOC đã chốt → KOC Network",d:"Sheet nguồn để KOC Network đồng bộ",u:"https://docs.google.com/spreadsheets/d/"+meta.networkId+"/edit"}]:[]).map(x=>`<a href="${esc(x.u)}" target="_blank" rel="noopener">${esc(x.t)}<span>${esc(x.d)}</span></a>`).join("");
+  const camps=[...new Set(kocs.map(k=>k.campaign||"").filter(Boolean))];
+  if(camp!=="all"&&camp!=="_none"&&!camps.includes(camp))camp="all";
+  $("camp-sel").innerHTML=`<option value="all">Tất cả chiến dịch</option>`+camps.map(c=>`<option value="${esc(c)}" ${c===camp?"selected":""}>${esc(c)}</option>`).join("")+`<option value="_none" ${camp==="_none"?"selected":""}>Tự thêm</option>`;
+  const all=kocs.filter(k=>k.platform===platform&&(camp==="all"||(camp==="_none"?!k.campaign:k.campaign===camp)));
   const by={};all.forEach(k=>by[k.status]=(by[k.status]||0)+1);
   $("chips").innerHTML=[{k:"all",t:"Tất cả"},...STATUSES].map(s=>`<button class="chip" aria-pressed="${filter===s.k}" data-f="${s.k}">${s.t} <b>${s.k==="all"?all.length:(by[s.k]||0)}</b></button>`).join("");
 
   const q=query.toLowerCase();
-  const rows=all.filter(k=>(filter==="all"||k.status===filter)&&(!q||(k.name+" "+k.contact+" "+(k.note||"")).toLowerCase().includes(q))).sort((a,b)=>a.createdAt-b.createdAt);
+  const allRows=all.filter(k=>(filter==="all"||k.status===filter)&&(!q||(k.name+" "+k.contact+" "+(k.handle||"")+" "+(k.note||"")).toLowerCase().includes(q))).sort((a,b)=>a.createdAt-b.createdAt);
+  const rows=allRows.slice(0,shown);
   const list=$("list");
   if(!all.length){list.innerHTML=`<div class="empty"><h3>Chưa có KOC ${PL[platform].name} nào</h3><p>Bấm <b>+ Nhập KOC</b> rồi dán danh sách từ Excel/Google Sheets hoặc chọn file CSV. Mỗi KOC sẽ có nút <b>Sao chép và mở ↗</b> để gửi tin nhắn mẫu.</p></div>`;return}
   if(!rows.length){list.innerHTML=`<div class="empty">Không có KOC nào khớp bộ lọc.</div>`;return}
   list.innerHTML=rows.map(k=>`<article class="koc">
-      <div class="who"><div class="name">${esc(k.name)}</div><div class="contact">${esc(k.contact)}</div>${k.note?`<div class="note">${esc(k.note)}</div>`:""}</div>
+      <div class="who"><div class="name">${k.link?`<a href="${esc(k.link)}" target="_blank" rel="noopener">${esc(k.name)}</a>`:esc(k.name)}${k.campaign?`<span class="camp">${esc(k.campaign)}</span>`:""}</div><div class="contact">${esc(k.contact)}${k.handle&&k.handle!==k.contact?" · "+esc(k.handle):""}${k.followers?" · "+esc(/^\d+$/.test(String(k.followers))?Number(k.followers).toLocaleString("vi-VN"):k.followers)+" follow":""}${k.tier?" · "+esc(k.tier):""}</div>${k.note?`<div class="note">${esc(k.note)}</div>`:""}</div>
       <div class="state">
         <select class="status s-${k.status}" data-status="${esc(k.id)}" aria-label="Tình trạng">${STATUSES.map(s=>`<option value="${s.k}" ${s.k===k.status?"selected":""}>${s.t}</option>`).join("")}</select>
         ${k.sentBy||k.sentAt?`<span class="sent">Đã gửi bằng <b>${esc(accName(k.sentBy)||k.sentByName||"?")}</b>${k.sentAt?" · "+fmtTime(k.sentAt):""}</span>`:""}
@@ -380,7 +418,7 @@ function render(){
         <button class="btn small ghost" data-sched="${esc(k.id)}">${openSched===k.id?"Đóng lịch":"Sửa lịch"}</button></div>
       ${openSched===k.id?`<div class="sched-edit">${MS.map(m=>`<div><label>Hạn ${m.w}<input type="date" value="${esc(String(k[m.k+"Due"]||"").slice(0,10))}" data-due="${esc(k.id)}|${m.k}"></label>
         <label class="chk"><input type="checkbox" ${isDone(k,m.k)?"checked":""} data-donechk="${esc(k.id)}|${m.k}"> Đã nộp</label></div>`).join("")}</div>`:""}
-    </article>`).join("");
+    </article>`).join("")+(allRows.length>rows.length?`<div class="more"><button class="btn" data-more="1">Xem thêm (${allRows.length-rows.length} còn lại)</button></div>`:"");
 }
 
 function renderDue(dues){
@@ -404,10 +442,11 @@ function fallbackCopy(text){
 function armConfirm(key){confirmDel=key;render();setTimeout(()=>{if(confirmDel===key){confirmDel=null;render()}},3000)}
 
 document.addEventListener("click",e=>{
-  const t=e.target.closest("[data-p],[data-f],[data-send],[data-del],[data-delacct],[data-remind],[data-markdone],[data-sched]");
+  const t=e.target.closest("[data-more],[data-p],[data-f],[data-send],[data-del],[data-delacct],[data-remind],[data-markdone],[data-sched]");
   if(!t)return;
-  if(t.dataset.p){platform=t.dataset.p;filter="all";history.replaceState(null,"","#"+platform);render();return}
-  if(t.dataset.f){filter=t.dataset.f;render();return}
+  if(t.dataset.more){shown+=100;render();return}
+  if(t.dataset.p){platform=t.dataset.p;filter="all";shown=100;history.replaceState(null,"","#"+platform);render();return}
+  if(t.dataset.f){filter=t.dataset.f;shown=100;render();return}
   if(t.dataset.send){
     const k=kocs.find(x=>x.id===t.dataset.send);if(!k)return;
     const msg=message(k);
@@ -450,7 +489,10 @@ document.addEventListener("change",e=>{
   write(()=>Store.upsert("kocs",[toRow(k)]),"Đã cập nhật: "+SLABEL[k.status]);
 });
 $("acct").addEventListener("change",e=>{ls.set("acct-"+platform,e.target.value);render()});
-$("q").addEventListener("input",e=>{query=e.target.value;render()});
+$("q").addEventListener("input",e=>{query=e.target.value;shown=100;render()});
+$("camp-sel").addEventListener("change",e=>{camp=e.target.value;shown=100;render()});
+$("sync-now").onclick=()=>syncNow(true);
+document.addEventListener("click",e=>{if(!e.target.closest("#docs"))$("docs").open=false});
 
 function toggle(id){["d-accts","d-tpl","d-import","d-settings"].forEach(d=>$(d).hidden=d===id?!$(d).hidden:true)}
 $("btn-accts").onclick=()=>toggle("d-accts");
@@ -526,7 +568,7 @@ $("logout").onclick=()=>{cfg.key="";ls.set("cfg-key","");kocs=[];accounts=[];tem
 if(Store.remote()&&!cfg.key)document.body.classList.add("locked");
 render();
 refresh();
-setInterval(()=>{if(Store.remote()&&!document.hidden&&!document.body.classList.contains("locked"))refresh(true)},30000);
+setInterval(()=>{if(Store.remote()&&!document.hidden&&!document.body.classList.contains("locked"))refresh(true)},300000);
 document.addEventListener("visibilitychange",()=>{if(!document.hidden&&Store.remote())refresh(true)});
 })();
 </script>
