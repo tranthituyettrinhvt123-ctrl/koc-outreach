@@ -1,0 +1,431 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>KOC Outreach</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+[hidden]{display:none!important}
+body{margin:0}
+/* Layout: sticky header with two platform tabs; each tab = toolbar (sender account, template, import) + status chips + KOC list */
+:root{
+  --bg:#eef0fa; --surface:#ffffff; --surface-2:#e3e7f8; --fg:#1b1f33; --muted:#5d6385; --line:#d3d8ee;
+  --accent:#2f45a0; --accent-fg:#ffffff; --accent-soft:#dde3fb;
+  --zalo:#0068ff; --tiktok:#e5245c; --mail:#c5761b;
+  --ok:#1f8a4c; --ok-bg:#dcf3e5; --warn:#a86400; --warn-bg:#fdefd6; --bad:#c0392b; --bad-bg:#fbe1de; --info:#2f45a0; --info-bg:#dde3fb; --idle:#5d6385; --idle-bg:#eceef5;
+  --font:"Be Vietnam Pro",system-ui,-apple-system,"Segoe UI",sans-serif; --mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#12142a; --surface:#1b1e38; --surface-2:#252a4a; --fg:#e7e9f7; --muted:#9ea4c8; --line:#2f3559;
+  --accent:#7d90f0; --accent-fg:#0f1226; --accent-soft:#2a3263; --zalo:#4d9bff; --tiktok:#ff5c8a; --mail:#f0a24a;
+  --ok:#5fd394; --ok-bg:#183a2a; --warn:#f2b45a; --warn-bg:#3d2e14; --bad:#ff8a7d; --bad-bg:#43201d; --info:#9fb0ff; --info-bg:#2a3263; --idle:#a3a8c8; --idle-bg:#262a44; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#12142a; --surface:#1b1e38; --surface-2:#252a4a; --fg:#e7e9f7; --muted:#9ea4c8; --line:#2f3559;
+  --accent:#7d90f0; --accent-fg:#0f1226; --accent-soft:#2a3263; --zalo:#4d9bff; --tiktok:#ff5c8a; --mail:#f0a24a;
+  --ok:#5fd394; --ok-bg:#183a2a; --warn:#f2b45a; --warn-bg:#3d2e14; --bad:#ff8a7d; --bad-bg:#43201d; --info:#9fb0ff; --info-bg:#2a3263; --idle:#a3a8c8; --idle-bg:#262a44; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--font);font-size:14px;line-height:1.5}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--surface)}
+.wrap{max-width:1100px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+header{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--surface);border-bottom:1px solid var(--line)}
+.head{display:flex;align-items:center;gap:16px;flex-wrap:wrap;padding-block:12px}
+h1{font-size:18px;margin:0;font-weight:700;letter-spacing:-.01em}
+h1 small{font-weight:500;color:var(--muted);font-size:13px;margin-left:6px}
+.tabs{display:flex;gap:4px;margin-left:auto;background:var(--surface-2);padding:4px;border-radius:12px}
+.tab{border:0;background:transparent;color:var(--muted);font:600 14px var(--font);padding:8px 16px;border-radius:9px;cursor:pointer;display:flex;align-items:center;gap:8px}
+.tab .dot{width:8px;height:8px;border-radius:50%}
+.tab[aria-selected="true"]{background:var(--surface);color:var(--fg);box-shadow:0 1px 3px rgba(0,0,0,.12)}
+.tab .n{font:500 12px var(--mono);color:var(--muted)}
+main{padding-block:20px 48px;display:flex;flex-direction:column;gap:16px}
+.panel{background:var(--accent-soft);border:1px solid var(--line);border-radius:14px;padding:16px;display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end}
+.field{display:flex;flex-direction:column;gap:4px;min-width:0}
+.field label{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:600}
+select,input,textarea{font:inherit;color:var(--fg);background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:9px 12px;min-width:0}
+select:focus-visible,input:focus-visible,textarea:focus-visible,button:focus-visible,a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+textarea{width:100%;resize:vertical;min-height:90px;line-height:1.5}
+.btn{border:1px solid var(--line);background:var(--surface);color:var(--fg);font:500 14px var(--font);padding:9px 14px;border-radius:10px;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.btn:hover{border-color:var(--accent)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-fg)}
+.btn.primary:hover{filter:brightness(1.08)}
+.btn.small{padding:6px 10px;font-size:13px}
+.btn.ghost{background:transparent;border-color:transparent;color:var(--muted)}
+.btn.ghost:hover{color:var(--bad)}
+.btn.danger{background:var(--bad);border-color:var(--bad);color:#fff}
+.grow{flex:1}
+.drawer{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:12px}
+.drawer h2{font-size:15px;margin:0}
+.hint{color:var(--muted);font-size:13px;margin:0}
+.hint code{font-family:var(--mono);font-size:12px;background:var(--surface-2);padding:1px 5px;border-radius:5px}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chip{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:6px 12px;font:500 13px var(--font);color:var(--fg);cursor:pointer;display:flex;gap:6px;align-items:center}
+.chip b{font:600 12px var(--mono)}
+.chip[aria-pressed="true"]{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+.list{display:flex;flex-direction:column;gap:8px}
+.koc{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 14px;display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr) auto;gap:12px;align-items:center}
+.koc .who{min-width:0}
+.koc .name{font-weight:600;font-size:15px;overflow-wrap:anywhere}
+.koc .contact{font:400 12.5px var(--mono);color:var(--muted);overflow-wrap:anywhere}
+.koc .note{font-size:12.5px;color:var(--muted);margin-top:2px}
+.koc .state{display:flex;flex-direction:column;gap:6px;min-width:0;align-items:flex-start}
+.koc .sent{font-size:12.5px;color:var(--muted);border:1px solid var(--line);border-radius:8px;padding:3px 8px;background:var(--bg)}
+.koc .sent b{color:var(--fg);font-weight:600}
+.koc .acts{display:flex;gap:6px;align-items:center;justify-content:flex-end;flex-wrap:wrap}
+.status{appearance:none;-webkit-appearance:none;border-radius:999px;padding:4px 26px 4px 12px;font:600 12.5px var(--font);border:1px solid transparent;cursor:pointer;background-image:linear-gradient(45deg,transparent 50%,currentColor 50%),linear-gradient(135deg,currentColor 50%,transparent 50%);background-position:calc(100% - 13px) 55%,calc(100% - 9px) 55%;background-size:4px 4px;background-repeat:no-repeat}
+.s-new{color:var(--idle);background-color:var(--idle-bg)}
+.s-sent{color:var(--info);background-color:var(--info-bg)}
+.s-replied{color:var(--warn);background-color:var(--warn-bg)}
+.s-agreed{color:var(--ok);background-color:var(--ok-bg)}
+.s-declined{color:var(--bad);background-color:var(--bad-bg)}
+.s-noreply{color:var(--idle);background-color:var(--idle-bg)}
+.empty{background:var(--surface);border:1px dashed var(--line);border-radius:14px;padding:32px 20px;text-align:center;color:var(--muted)}
+.empty h3{color:var(--fg);margin:0 0 6px;font-size:16px}
+.banner{border-radius:10px;padding:8px 12px;font-size:13px;background:var(--warn-bg);color:var(--warn)}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));background:var(--fg);color:var(--bg);padding:10px 16px;border-radius:10px;font-weight:500;z-index:20;max-width:calc(100% - 32px)}
+.acct-list{display:flex;flex-direction:column;gap:6px}
+.acct{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:13.5px}
+.acct .nm{font-weight:600}
+.acct .ct{font:500 12px var(--mono);color:var(--muted)}
+.platform-badge{font:600 11px var(--font);text-transform:uppercase;letter-spacing:.06em;padding:2px 8px;border-radius:6px;color:#fff}
+@media (max-width:720px){
+  .koc{grid-template-columns:minmax(0,1fr)}
+  .koc .acts{justify-content:flex-start}
+  .tabs{margin-left:0;width:100%}
+  .tab{flex:1;justify-content:center}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap head">
+    <h1>KOC Outreach <small id="sync">Đang kết nối…</small></h1>
+    <div class="tabs" role="tablist">
+      <button class="tab" role="tab" id="tab-zalo" data-p="zalo"><span class="dot" style="background:var(--zalo)"></span>Zalo <span class="n" id="n-zalo">0</span></button>
+      <button class="tab" role="tab" id="tab-tiktok" data-p="tiktok"><span class="dot" style="background:var(--tiktok)"></span>TikTok <span class="n" id="n-tiktok">0</span></button>
+      <button class="tab" role="tab" id="tab-mail" data-p="mail"><span class="dot" style="background:var(--mail)"></span>Email <span class="n" id="n-mail">0</span></button>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+  <div id="banner" class="banner" hidden></div>
+
+  <section class="panel">
+    <div class="field grow" style="min-width:220px">
+      <label for="acct">Gửi bằng tài khoản</label>
+      <select id="acct"></select>
+    </div>
+    <button class="btn" id="btn-accts">Quản lý tài khoản</button>
+    <button class="btn" id="btn-tpl">Tin nhắn mẫu</button>
+    <button class="btn" id="btn-import">+ Nhập KOC</button>
+    <button class="btn" id="btn-settings">⚙ Kết nối Google Sheets</button>
+  </section>
+
+  <section class="drawer" id="d-accts" hidden>
+    <h2>Tài khoản gửi <span id="d-accts-p"></span></h2>
+    <div class="acct-list" id="acct-list"></div>
+    <div class="row">
+      <input id="new-acct" placeholder="vd: vtpl_kr_lucia hoặc @sisteranne" class="grow" style="min-width:200px">
+      <input id="new-limit" type="number" min="1" value="2000" style="width:110px" aria-label="Giới hạn">
+      <button class="btn primary" id="add-acct">Thêm</button>
+    </div>
+    <p class="hint">Số đếm = số KOC đã gửi bằng tài khoản đó / giới hạn bạn đặt.</p>
+  </section>
+
+  <section class="drawer" id="d-tpl" hidden>
+    <h2>Tin nhắn mẫu <span id="d-tpl-p"></span></h2>
+    <input id="tpl-subj" placeholder="Tiêu đề email" hidden>
+    <textarea id="tpl" rows="6"></textarea>
+    <div class="row"><button class="btn primary" id="save-tpl">Lưu mẫu</button><p class="hint">Dùng <code>{ten}</code> để chèn tên KOC, <code>{taikhoan}</code> để chèn tài khoản gửi.</p></div>
+    <p class="hint" id="mail-hint" hidden>Nút <b>Sao chép và mở ↗</b> mở khung soạn thư Gmail đã điền sẵn người nhận, tiêu đề và nội dung. Hãy đăng nhập đúng tài khoản Gmail dùng để gửi.</p>
+  </section>
+
+  <section class="drawer" id="d-import" hidden>
+    <h2>Nhập danh sách KOC <span id="d-import-p"></span></h2>
+    <p class="hint" id="import-hint"></p>
+    <textarea id="import-text" rows="6"></textarea>
+    <div class="row">
+      <button class="btn primary" id="do-import">Nhập</button>
+      <label class="btn" for="import-file">Chọn file CSV</label>
+      <input type="file" id="import-file" accept=".csv,.tsv,.txt" hidden>
+      <span class="hint" id="import-msg"></span>
+    </div>
+  </section>
+
+  <section class="drawer" id="d-settings" hidden>
+    <h2>Kết nối Google Sheets</h2>
+    <p class="hint">Dán link Web App của Apps Script (dạng <code>https://script.google.com/macros/s/…/exec</code>) để cả team dùng chung dữ liệu. Để trống thì dữ liệu chỉ lưu trong trình duyệt này. Link đã cài sẵn trong file sẽ được dùng mặc định.</p>
+    <div class="row">
+      <input id="cfg-url" class="grow" style="min-width:240px" placeholder="https://script.google.com/macros/s/.../exec">
+      <input id="cfg-key" style="width:160px" placeholder="Mã bảo vệ của team">
+      <button class="btn primary" id="save-cfg">Lưu &amp; tải lại</button>
+    </div>
+    <div class="row">
+      <button class="btn small" id="export-csv">Xuất CSV tab này</button>
+      <span class="hint" id="cfg-msg"></span>
+    </div>
+  </section>
+
+  <div class="row">
+    <div class="chips" id="chips"></div>
+    <input id="q" type="search" placeholder="Tìm tên / liên hệ" class="grow" style="min-width:180px">
+  </div>
+
+  <div class="list" id="list"></div>
+</main>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+/* =====================================================================
+   CẤU HÌNH — dán link Web App của Apps Script vào SHEETS_URL trước khi
+   đưa lên Netlify, để cả team mở trang là dùng chung dữ liệu ngay.
+   ===================================================================== */
+const CONFIG = {
+  SHEETS_URL: "https://script.google.com/macros/s/AKfycbx6WzF1cCoeZsO8PwUodHiis3XF1MkeeELyWzUufycLISpyPxY3P8B2c66JXFeEzFTdvg/exec",   // vd: "https://script.google.com/macros/s/AKfy.../exec"
+  KEY: ""           // mã bảo vệ, phải trùng với KEY trong Apps Script (để trống nếu không dùng)
+};
+
+(function(){
+const STATUSES=[
+  {k:"new",t:"Chưa gửi"},{k:"sent",t:"Đã gửi"},{k:"replied",t:"Đã trả lời"},
+  {k:"agreed",t:"Đồng ý hợp tác"},{k:"declined",t:"Từ chối"},{k:"noreply",t:"Không phản hồi"}];
+const SLABEL=Object.fromEntries(STATUSES.map(s=>[s.k,s.t]));
+const SKEY=Object.fromEntries(STATUSES.map(s=>[s.t,s.k]));
+const PL={
+  zalo:{name:"Zalo",contact:"SĐT / link Zalo",def:"Chào {ten}, mình là {taikhoan} bên VTPL. Bên mình đang tìm KOC hợp tác cho chiến dịch mới, bạn có quan tâm không ạ?"},
+  tiktok:{name:"TikTok",contact:"@username / link TikTok",def:"Hi {ten}! Mình là {taikhoan} từ VTPL. Bên mình rất thích nội dung của bạn và muốn mời bạn hợp tác một chiến dịch. Bạn có thể để lại Zalo/email để mình gửi chi tiết không ạ?"},
+  mail:{name:"Email",contact:"Địa chỉ email",subj:"[VTPL] Lời mời hợp tác cùng {ten}",def:"Chào {ten},\n\nMình là {taikhoan} bên VTPL. Bên mình rất thích nội dung của bạn và muốn mời bạn tham gia chiến dịch sắp tới.\n\nNếu bạn quan tâm, bạn phản hồi email này để mình gửi brief và chi phí chi tiết nhé.\n\nCảm ơn bạn,\n{taikhoan}\nVTPL"}};
+const PLATFORMS=["zalo","tiktok","mail"];
+
+const ls={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}}};
+const cfg={url:ls.get("cfg-url")||CONFIG.SHEETS_URL||"",key:ls.get("cfg-key")??CONFIG.KEY??""};
+
+let platform=PLATFORMS.includes(location.hash.slice(1))?location.hash.slice(1):"zalo";
+let kocs=[],accounts=[],templates={},subjects={},filter="all",query="",confirmDel=null,pending=0;
+const $=id=>document.getElementById(id);
+
+function toast(msg){const t=$("toast");t.textContent=msg;t.hidden=false;clearTimeout(toast._t);toast._t=setTimeout(()=>t.hidden=true,2600)}
+function esc(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
+function fmtTime(ms){if(!ms)return"";return new Date(+ms).toLocaleString("vi-VN",{hour:"2-digit",minute:"2-digit",day:"2-digit",month:"2-digit"})}
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7)}
+
+/* ---------------- Data store: Google Sheets or this browser ---------------- */
+const Store={
+  remote(){return !!cfg.url},
+  async load(){
+    if(!this.remote()){
+      try{return JSON.parse(ls.get("koc-data")||"{}")}catch(e){return{}}
+    }
+    const r=await fetch(cfg.url+"?action=list&key="+encodeURIComponent(cfg.key||""));
+    const j=await r.json(); if(j.error)throw new Error(j.error); return j;
+  },
+  saveLocal(){ls.set("koc-data",JSON.stringify({kocs,accounts,templates:Object.keys(templates).map(id=>({id,text:templates[id],subject:subjects[id]??""}))}))},
+  async post(body){
+    if(!this.remote()){this.saveLocal();return}
+    const r=await fetch(cfg.url,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({...body,key:cfg.key||""})});
+    const j=await r.json(); if(j.error)throw new Error(j.error);
+  },
+  upsert(sheet,rows){return this.post({action:"upsert",sheet,rows})},
+  del(sheet,id){return this.post({action:"delete",sheet,id})}
+};
+function toRow(k){return {...k,status:SLABEL[k.status]||k.status}}
+function applyData(d){
+  kocs=(d.kocs||[]).filter(k=>k.id).map(k=>({...k,status:SKEY[k.status]||k.status||"new",sentAt:+k.sentAt||0,createdAt:+k.createdAt||0}));
+  accounts=(d.accounts||[]).filter(a=>a.id).map(a=>({...a,limit:+a.limit||0}));
+  templates={};subjects={};(d.templates||[]).forEach(t=>{if(t.id){templates[t.id]=t.text;if(t.subject)subjects[t.id]=t.subject}});
+}
+async function refresh(silent){
+  if(pending)return;
+  try{const d=await Store.load();if(pending)return;applyData(d);
+    $("sync").textContent=Store.remote()?"· Google Sheets · "+new Date().toLocaleTimeString("vi-VN",{hour:"2-digit",minute:"2-digit"}):"· Lưu trong trình duyệt";
+    $("banner").hidden=Store.remote();
+    if(!Store.remote())$("banner").textContent="Dữ liệu đang lưu trong trình duyệt này, chưa chia sẻ với team. Bấm \"Kết nối Google Sheets\" để dùng chung.";
+    render();
+  }catch(e){$("sync").textContent="· Lỗi kết nối";
+    if(/mã bảo vệ/i.test(e.message)){$("banner").textContent="Cần nhập mã bảo vệ của team: bấm \"⚙ Kết nối Google Sheets\", điền mã rồi bấm Lưu.";$("banner").hidden=false;$("d-settings").hidden=false;$("cfg-url").value=cfg.url;$("cfg-key").value=cfg.key}
+    else if(!silent)toast("Không tải được dữ liệu từ Google Sheets: "+e.message)}
+}
+async function write(fn,okMsg){
+  pending++;render();
+  try{await fn();if(okMsg)toast(okMsg)}
+  catch(e){toast("Không lưu được: "+e.message);pending--;refresh();return}
+  pending--;
+}
+
+/* ---------------- helpers ---------------- */
+function accName(id){const a=accounts.find(a=>a.id===id);return a?a.name:""}
+function subject(k){return (subjects.mail??PL.mail.subj).replace(/\{ten\}/g,k.name||"bạn").replace(/\{taikhoan\}/g,accName($("acct").value)||"VTPL")}
+function message(k){return (templates[k.platform]??PL[k.platform].def).replace(/\{ten\}/g,k.name||"bạn").replace(/\{taikhoan\}/g,accName($("acct").value)||"mình")}
+function linkFor(k){
+  const c=(k.contact||"").trim();
+  if(k.platform==="mail")return "https://mail.google.com/mail/?view=cm&fs=1&to="+encodeURIComponent(c)+"&su="+encodeURIComponent(subject(k))+"&body="+encodeURIComponent(message(k));
+  if(/^https?:\/\//i.test(c))return c;
+  if(k.platform==="zalo")return "https://zalo.me/"+c.replace(/[^\d+]/g,"").replace(/^\+/,"");
+  return "https://www.tiktok.com/@"+c.replace(/^@/,"");
+}
+function normContact(c,p){
+  c=String(c||"").trim();
+  if(p==="mail")return c.replace(/^mailto:/i,"").toLowerCase();
+  if(p==="tiktok"){const m=c.match(/tiktok\.com\/@([\w.\-]+)/i);if(m)return "@"+m[1];if(c&&!/^https?:/i.test(c)&&!c.startsWith("@"))return "@"+c}
+  return c;
+}
+
+/* ---------------- render ---------------- */
+function render(){
+  document.querySelectorAll(".tab").forEach(b=>b.setAttribute("aria-selected",b.dataset.p===platform));
+  PLATFORMS.forEach(p=>$("n-"+p).textContent=kocs.filter(k=>k.platform===p).length);
+  ["d-accts-p","d-tpl-p","d-import-p"].forEach(id=>$(id).innerHTML=`<span class="platform-badge" style="background:var(--${platform})">${PL[platform].name}</span>`);
+  $("import-hint").innerHTML=`Dán từ Excel/Google Sheets hoặc CSV, mỗi dòng 1 KOC theo cột: <code>Tên</code>, <code>${PL[platform].contact}</code>, <code>Ghi chú</code> (không bắt buộc). Dòng tiêu đề sẽ tự bỏ qua, KOC trùng liên hệ sẽ không thêm lại.`;
+  $("import-text").placeholder={zalo:"Nguyễn An\t0912345678\tBeauty\nTrần Bình\t0987654321",tiktok:"Mai Linh\t@mailinh.review\tSkincare\nHà Vy\thttps://www.tiktok.com/@havy",mail:"Lê Minh\tminh.creator@gmail.com\tFood\nPhạm Thu\tthu.koc@gmail.com"}[platform];
+  if(document.activeElement!==$("tpl"))$("tpl").value=templates[platform]??PL[platform].def;
+  $("tpl-subj").hidden=$("mail-hint").hidden=platform!=="mail";
+  if(document.activeElement!==$("tpl-subj"))$("tpl-subj").value=subjects.mail??PL.mail.subj;
+  $("new-acct").placeholder=platform==="mail"?"vd: lucia@vtpl.kr":"vd: vtpl_kr_lucia hoặc @sisteranne";
+
+  const mine=accounts.filter(a=>a.platform===platform);
+  const counts={};kocs.forEach(k=>{if(k.sentBy)counts[k.sentBy]=(counts[k.sentBy]||0)+1});
+  const sel=$("acct"),cur=sel.value||ls.get("acct-"+platform);
+  sel.innerHTML=mine.length?mine.map(a=>`<option value="${esc(a.id)}">${esc(a.name)} (${counts[a.id]||0}/${a.limit||"∞"})</option>`).join(""):`<option value="">Chưa có tài khoản, thêm ở "Quản lý tài khoản"</option>`;
+  const want=ls.get("acct-"+platform)||cur; if(want&&mine.some(a=>a.id===want))sel.value=want;
+  $("acct-list").innerHTML=mine.length?mine.map(a=>`<div class="acct"><span class="nm">${esc(a.name)}</span><span class="ct">${counts[a.id]||0}/${a.limit||"∞"}</span><button class="btn ghost small" data-delacct="${esc(a.id)}">${confirmDel==="a:"+a.id?"Bấm lần nữa để xoá":"Xoá"}</button></div>`).join(""):`<p class="hint">Chưa có tài khoản ${PL[platform].name} nào.</p>`;
+
+  const all=kocs.filter(k=>k.platform===platform);
+  const by={};all.forEach(k=>by[k.status]=(by[k.status]||0)+1);
+  $("chips").innerHTML=[{k:"all",t:"Tất cả"},...STATUSES].map(s=>`<button class="chip" aria-pressed="${filter===s.k}" data-f="${s.k}">${s.t} <b>${s.k==="all"?all.length:(by[s.k]||0)}</b></button>`).join("");
+
+  const q=query.toLowerCase();
+  const rows=all.filter(k=>(filter==="all"||k.status===filter)&&(!q||(k.name+" "+k.contact+" "+(k.note||"")).toLowerCase().includes(q))).sort((a,b)=>a.createdAt-b.createdAt);
+  const list=$("list");
+  if(!all.length){list.innerHTML=`<div class="empty"><h3>Chưa có KOC ${PL[platform].name} nào</h3><p>Bấm <b>+ Nhập KOC</b> rồi dán danh sách từ Excel/Google Sheets hoặc chọn file CSV. Mỗi KOC sẽ có nút <b>Sao chép và mở ↗</b> để gửi tin nhắn mẫu.</p></div>`;return}
+  if(!rows.length){list.innerHTML=`<div class="empty">Không có KOC nào khớp bộ lọc.</div>`;return}
+  list.innerHTML=rows.map(k=>`<article class="koc">
+      <div class="who"><div class="name">${esc(k.name)}</div><div class="contact">${esc(k.contact)}</div>${k.note?`<div class="note">${esc(k.note)}</div>`:""}</div>
+      <div class="state">
+        <select class="status s-${k.status}" data-status="${esc(k.id)}" aria-label="Tình trạng">${STATUSES.map(s=>`<option value="${s.k}" ${s.k===k.status?"selected":""}>${s.t}</option>`).join("")}</select>
+        ${k.sentBy||k.sentAt?`<span class="sent">Đã gửi bằng <b>${esc(accName(k.sentBy)||k.sentByName||"?")}</b>${k.sentAt?" · "+fmtTime(k.sentAt):""}</span>`:""}
+      </div>
+      <div class="acts">
+        <a class="btn primary" href="${esc(linkFor(k))}" target="_blank" rel="noopener" data-send="${esc(k.id)}">Sao chép và mở ↗</a>
+        <button class="btn ghost small" data-del="${esc(k.id)}">${confirmDel==="k:"+k.id?"Xoá thật?":"Xoá"}</button>
+      </div>
+    </article>`).join("");
+}
+
+/* ---------------- actions ---------------- */
+function fallbackCopy(text){
+  const ta=document.createElement("textarea");ta.value=text;document.body.appendChild(ta);ta.select();
+  let ok=false;try{ok=document.execCommand("copy")}catch(e){}ta.remove();
+  toast(ok?"Đã sao chép tin nhắn":"Không sao chép tự động được, hãy copy trong mục Tin nhắn mẫu");
+}
+function armConfirm(key){confirmDel=key;render();setTimeout(()=>{if(confirmDel===key){confirmDel=null;render()}},3000)}
+
+document.addEventListener("click",e=>{
+  const t=e.target.closest("[data-p],[data-f],[data-send],[data-del],[data-delacct]");
+  if(!t)return;
+  if(t.dataset.p){platform=t.dataset.p;filter="all";history.replaceState(null,"","#"+platform);render();return}
+  if(t.dataset.f){filter=t.dataset.f;render();return}
+  if(t.dataset.send){
+    const k=kocs.find(x=>x.id===t.dataset.send);if(!k)return;
+    const msg=message(k);
+    try{navigator.clipboard.writeText(msg).then(()=>toast("Đã sao chép tin nhắn, dán vào "+PL[k.platform].name),()=>fallbackCopy(msg))}catch(_){fallbackCopy(msg)}
+    const acct=$("acct").value;
+    k.sentAt=Date.now();k.sentBy=acct||"";k.sentByName=accName(acct)||"";k.updatedAt=Date.now();
+    if(k.status==="new")k.status="sent";
+    setTimeout(()=>write(()=>Store.upsert("kocs",[toRow(k)])),0); // defer so the link still opens
+    return;
+  }
+  if(t.dataset.del){
+    const id=t.dataset.del;if(confirmDel!=="k:"+id)return armConfirm("k:"+id);
+    confirmDel=null;kocs=kocs.filter(k=>k.id!==id);write(()=>Store.del("kocs",id),"Đã xoá KOC");return;
+  }
+  if(t.dataset.delacct){
+    const id=t.dataset.delacct;if(confirmDel!=="a:"+id)return armConfirm("a:"+id);
+    confirmDel=null;accounts=accounts.filter(a=>a.id!==id);write(()=>Store.del("accounts",id),"Đã xoá tài khoản");
+  }
+});
+document.addEventListener("change",e=>{
+  const s=e.target.closest("[data-status]");if(!s)return;
+  const k=kocs.find(x=>x.id===s.dataset.status);if(!k)return;
+  k.status=s.value;k.updatedAt=Date.now();
+  write(()=>Store.upsert("kocs",[toRow(k)]),"Đã cập nhật: "+SLABEL[k.status]);
+});
+$("acct").addEventListener("change",e=>{ls.set("acct-"+platform,e.target.value);render()});
+$("q").addEventListener("input",e=>{query=e.target.value;render()});
+
+function toggle(id){["d-accts","d-tpl","d-import","d-settings"].forEach(d=>$(d).hidden=d===id?!$(d).hidden:true)}
+$("btn-accts").onclick=()=>toggle("d-accts");
+$("btn-tpl").onclick=()=>toggle("d-tpl");
+$("btn-import").onclick=()=>toggle("d-import");
+$("btn-settings").onclick=()=>{toggle("d-settings");$("cfg-url").value=cfg.url;$("cfg-key").value=cfg.key};
+
+$("add-acct").onclick=()=>{
+  const name=$("new-acct").value.trim();if(!name)return;
+  const a={id:platform+"-"+uid(),platform,name,limit:parseInt($("new-limit").value,10)||0,createdAt:Date.now()};
+  accounts.push(a);ls.set("acct-"+platform,a.id);$("new-acct").value="";
+  write(()=>Store.upsert("accounts",[a]),"Đã thêm tài khoản");
+};
+$("save-tpl").onclick=()=>{
+  templates[platform]=$("tpl").value; if(platform==="mail")subjects.mail=$("tpl-subj").value;
+  write(()=>Store.upsert("templates",[{id:platform,text:templates[platform],subject:platform==="mail"?subjects.mail:""}]),"Đã lưu tin nhắn mẫu");
+};
+$("save-cfg").onclick=()=>{
+  cfg.url=$("cfg-url").value.trim();cfg.key=$("cfg-key").value.trim();
+  if(cfg.url&&!/^https:\/\/script\.google\.com\/macros\/s\/.+\/exec$/.test(cfg.url)){$("cfg-msg").textContent="Link phải có dạng https://script.google.com/macros/s/…/exec";return}
+  ls.set("cfg-url",cfg.url);ls.set("cfg-key",cfg.key);$("cfg-msg").textContent="Đang tải…";
+  refresh().then(()=>$("cfg-msg").textContent=Store.remote()?"Đã kết nối Google Sheets.":"Đang lưu trong trình duyệt.");
+};
+$("export-csv").onclick=()=>{
+  const q=v=>'"'+String(v??"").replace(/"/g,'""')+'"';
+  const lines=[["Tên",PL[platform].contact,"Ghi chú","Tình trạng","Gửi bằng","Thời gian gửi"].map(q).join(",")]
+    .concat(kocs.filter(k=>k.platform===platform).map(k=>[k.name,k.contact,k.note,SLABEL[k.status],accName(k.sentBy)||k.sentByName,k.sentAt?new Date(k.sentAt).toLocaleString("vi-VN"):""].map(q).join(",")));
+  const a=document.createElement("a");a.href=URL.createObjectURL(new Blob(["﻿"+lines.join("\n")],{type:"text/csv"}));
+  a.download="koc-"+platform+".csv";a.click();
+};
+
+/* ---------------- import ---------------- */
+function parseCSVLine(line,sep){
+  if(sep==="\t")return line.split("\t");
+  const out=[];let cur="",q=false;
+  for(let i=0;i<line.length;i++){const c=line[i];
+    if(q){if(c==='"'&&line[i+1]==='"'){cur+='"';i++}else if(c==='"')q=false;else cur+=c}
+    else if(c==='"')q=true;else if(c===sep){out.push(cur);cur=""}else cur+=c}
+  out.push(cur);return out;
+}
+async function importText(text){
+  const lines=text.split(/\r?\n/).map(l=>l.trim()).filter(Boolean);
+  if(!lines.length){$("import-msg").textContent="Chưa có dữ liệu để nhập.";return}
+  const sep=lines[0].includes("\t")?"\t":(lines[0].includes(";")&&!lines[0].includes(",")?";":",");
+  let rows=lines.map(l=>parseCSVLine(l,sep).map(s=>s.trim()));
+  if(/^(tên|ten|name|họ tên|ho ten|koc)$/i.test(rows[0][0]||""))rows=rows.slice(1);
+  const existing=new Set(kocs.filter(k=>k.platform===platform).map(k=>normContact(k.contact,platform).toLowerCase()));
+  const toAdd=[];let skipped=0;const now=Date.now();
+  rows.forEach((r,i)=>{
+    let [name,contact,note]=r;if(r.length===1)contact=name;
+    contact=normContact(contact,platform);if(!contact){skipped++;return}
+    if(existing.has(contact.toLowerCase())){skipped++;return}
+    existing.add(contact.toLowerCase());
+    toAdd.push({id:uid()+i,platform,name:name||contact,contact,note:note||"",status:"new",sentBy:"",sentByName:"",sentAt:"",createdAt:now+i,updatedAt:now});
+  });
+  if(!toAdd.length){$("import-msg").textContent=`Không có KOC mới (${skipped} dòng trùng hoặc trống).`;return}
+  kocs=kocs.concat(toAdd);$("import-msg").textContent=`Đang lưu ${toAdd.length} KOC…`;
+  await write(async()=>{for(let i=0;i<toAdd.length;i+=200)await Store.upsert("kocs",toAdd.slice(i,i+200).map(toRow))});
+  $("import-text").value="";
+  $("import-msg").textContent=`Đã nhập ${toAdd.length} KOC${skipped?`, bỏ qua ${skipped} dòng trùng/trống`:""}.`;
+}
+$("do-import").onclick=()=>importText($("import-text").value);
+$("import-file").onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>importText(String(r.result).replace(/^﻿/,""));r.readAsText(f);e.target.value=""};
+
+window.addEventListener("hashchange",()=>{const p=location.hash.slice(1);if(PLATFORMS.includes(p)){platform=p;render()}});
+
+render();
+refresh();
+setInterval(()=>{if(Store.remote()&&!document.hidden)refresh(true)},30000);
+document.addEventListener("visibilitychange",()=>{if(!document.hidden&&Store.remote())refresh(true)});
+})();
+</script>
+</body>
+</html>
