@@ -89,6 +89,30 @@ textarea{width:100%;resize:vertical;min-height:90px;line-height:1.5}
 .acct .nm{font-weight:600}
 .acct .ct{font:500 12px var(--mono);color:var(--muted)}
 .platform-badge{font:600 11px var(--font);text-transform:uppercase;letter-spacing:.06em;padding:2px 8px;border-radius:6px;color:#fff}
+.duebox{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 16px;display:flex;flex-direction:column;gap:10px}
+.duebox h2{font-size:15px;margin:0;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.duebox h2 .cnt{font:600 12px var(--mono);background:var(--bad);color:#fff;border-radius:999px;padding:1px 8px}
+.duebox h2 .cnt.zero{background:var(--ok)}
+.duebox .sub{color:var(--muted);font-weight:500;font-size:12.5px}
+.due-list{display:flex;flex-direction:column;gap:6px}
+.due{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px 12px;align-items:center;padding:8px 10px;border-radius:10px;background:var(--bg);border-left:4px solid var(--info)}
+.due.over{border-left-color:var(--bad)}.due.today{border-left-color:var(--warn)}
+.due .what{min-width:0;font-size:13.5px}
+.due .what b{font-weight:600}
+.due .meta{font-size:12px;color:var(--muted)}
+.due .when{font:600 12px var(--font);padding:2px 8px;border-radius:999px;white-space:nowrap}
+.due.over .when{background:var(--bad-bg);color:var(--bad)}.due.today .when{background:var(--warn-bg);color:var(--warn)}.due.soon .when{background:var(--info-bg);color:var(--info)}
+.due .btns{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.tab .alert{background:var(--bad);color:#fff;font:600 11px var(--mono);border-radius:999px;padding:0 6px;margin-left:2px}
+.sched{grid-column:1/-1;display:flex;gap:6px;flex-wrap:wrap;align-items:center;border-top:1px dashed var(--line);padding-top:8px}
+.ms{font:500 12.5px var(--font);border:1px solid var(--line);border-radius:8px;padding:3px 8px;background:var(--bg);color:var(--muted);display:inline-flex;gap:5px;align-items:center}
+.ms b{color:var(--fg);font-weight:600}
+.ms.done{background:var(--ok-bg);color:var(--ok);border-color:transparent}.ms.done b{color:var(--ok)}
+.ms.over{background:var(--bad-bg);color:var(--bad);border-color:transparent}
+.ms.today{background:var(--warn-bg);color:var(--warn);border-color:transparent}
+.sched-edit{grid-column:1/-1;display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px;background:var(--bg);border-radius:10px;padding:10px}
+.sched-edit label{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--muted);font-weight:600}
+.sched-edit .chk{flex-direction:row;align-items:center;gap:6px;font-weight:500;color:var(--fg)}
 #login{max-width:380px;margin:12vh auto 0;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:28px 24px;display:flex;flex-direction:column;gap:14px}
 #login h2{margin:0;font-size:20px}
 #login input{width:100%}
@@ -129,6 +153,11 @@ body:not(.locked) #login{display:none}
 <main class="wrap">
   <div id="banner" class="banner" hidden></div>
 
+  <section class="duebox" id="duebox">
+    <h2>Cần nhắc <span class="cnt" id="due-cnt">0</span><span class="sub" id="due-sub"></span></h2>
+    <div class="due-list" id="due-list"></div>
+  </section>
+
   <section class="panel">
     <div class="field grow" style="min-width:220px">
       <label for="acct">Gửi bằng tài khoản</label>
@@ -155,7 +184,9 @@ body:not(.locked) #login{display:none}
     <h2>Tin nhắn mẫu <span id="d-tpl-p"></span></h2>
     <input id="tpl-subj" placeholder="Tiêu đề email" hidden>
     <textarea id="tpl" rows="6"></textarea>
-    <div class="row"><button class="btn primary" id="save-tpl">Lưu mẫu</button><p class="hint">Dùng <code>{ten}</code> để chèn tên KOC, <code>{taikhoan}</code> để chèn tài khoản gửi.</p></div>
+    <label class="hint" for="tpl-remind" style="font-weight:600">Lời nhắc hạn (dùng chung cho mọi KOC)</label>
+    <textarea id="tpl-remind" rows="3"></textarea>
+    <div class="row"><button class="btn primary" id="save-tpl">Lưu mẫu</button><p class="hint">Dùng <code>{ten}</code> để chèn tên KOC, <code>{taikhoan}</code> để chèn tài khoản gửi. Lời nhắc dùng thêm <code>{moc}</code> (kịch bản / demo / lên bài) và <code>{ngay}</code>.</p></div>
     <p class="hint" id="mail-hint" hidden>Nút <b>Sao chép và mở ↗</b> mở khung soạn thư Gmail đã điền sẵn người nhận, tiêu đề và nội dung. Hãy đăng nhập đúng tài khoản Gmail dùng để gửi.</p>
   </section>
 
@@ -215,6 +246,10 @@ const PL={
   tiktok:{name:"TikTok",contact:"@username / link TikTok",def:"Hi {ten}! Mình là {taikhoan} từ VTPL. Bên mình rất thích nội dung của bạn và muốn mời bạn hợp tác một chiến dịch. Bạn có thể để lại Zalo/email để mình gửi chi tiết không ạ?"},
   mail:{name:"Email",contact:"Địa chỉ email",subj:"[VTPL] Lời mời hợp tác cùng {ten}",def:"Chào {ten},\n\nMình là {taikhoan} bên VTPL. Bên mình rất thích nội dung của bạn và muốn mời bạn tham gia chiến dịch sắp tới.\n\nNếu bạn quan tâm, bạn phản hồi email này để mình gửi brief và chi phí chi tiết nhé.\n\nCảm ơn bạn,\n{taikhoan}\nVTPL"}};
 const PLATFORMS=["zalo","tiktok","mail"];
+const MS=[{k:"script",t:"Kịch bản",w:"kịch bản"},{k:"demo",t:"Demo",w:"demo"},{k:"air",t:"Air",w:"lên bài (air)"}];
+const REMIND_DEF="Chào {ten}, mình nhắc nhẹ: hạn gửi {moc} là {ngay}. Bạn gửi giúp mình đúng hạn nhé, có gì vướng cứ báo mình. Cảm ơn bạn!";
+const REMIND_DAYS=1; // hiện trong "Cần nhắc" khi còn ≤ 1 ngày
+let openSched=null;
 
 const ls={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}}};
 const cfg={url:ls.get("cfg-url")||CONFIG.SHEETS_URL||"",key:ls.get("cfg-key")??CONFIG.KEY??""};
@@ -255,6 +290,7 @@ function applyData(d){
 }
 async function refresh(silent){
   if(pending)return;
+  if(silent&&document.activeElement&&document.activeElement.matches("#list input, #list select"))return;
   try{const d=await Store.load();if(pending)return;applyData(d);document.body.classList.remove("locked");
     $("sync").textContent=Store.remote()?"· Google Sheets · "+new Date().toLocaleTimeString("vi-VN",{hour:"2-digit",minute:"2-digit"}):"· Lưu trong trình duyệt";
     $("banner").hidden=Store.remote();
@@ -275,9 +311,18 @@ async function write(fn,okMsg){
 function accName(id){const a=accounts.find(a=>a.id===id);return a?a.name:""}
 function subject(k){return (subjects.mail??PL.mail.subj).replace(/\{ten\}/g,k.name||"bạn").replace(/\{taikhoan\}/g,accName($("acct").value)||"VTPL")}
 function message(k){return (templates[k.platform]??PL[k.platform].def).replace(/\{ten\}/g,k.name||"bạn").replace(/\{taikhoan\}/g,accName($("acct").value)||"mình")}
-function linkFor(k){
+function today0(){const d=new Date();d.setHours(0,0,0,0);return d}
+function parseD(s){const m=String(s||"").match(/^(\d{4})-(\d{2})-(\d{2})/);return m?new Date(+m[1],m[2]-1,+m[3]):null}
+function daysLeft(s){const d=parseD(s);return d?Math.round((d-today0())/864e5):null}
+function fmtD(s){const d=parseD(s);return d?String(d.getDate()).padStart(2,"0")+"/"+String(d.getMonth()+1).padStart(2,"0"):""}
+function isDone(k,m){return k[m+"Done"]==="1"||k[m+"Done"]===1||k[m+"Done"]===true}
+function remindLog(k){try{return JSON.parse(k.remindLog||"{}")}catch(e){return{}}}
+function whenLabel(n){return n<0?"Quá hạn "+(-n)+" ngày":n===0?"Hôm nay":n===1?"Ngày mai":"Còn "+n+" ngày"}
+function dueItems(){const out=[];kocs.forEach(k=>MS.forEach(m=>{const due=k[m.k+"Due"];if(!due||isDone(k,m.k))return;const n=daysLeft(due);if(n!==null&&n<=REMIND_DAYS)out.push({k,m,n,due})}));return out.sort((a,b)=>a.n-b.n||String(a.k.name).localeCompare(b.k.name))}
+function remindMsg(k,m){return (templates.remind??REMIND_DEF).replace(/\{ten\}/g,k.name||"bạn").replace(/\{moc\}/g,m.w).replace(/\{ngay\}/g,fmtD(k[m.k+"Due"])).replace(/\{taikhoan\}/g,accName(ls.get("acct-"+k.platform)||"")||"mình")}
+function linkFor(k,body,subj){
   const c=(k.contact||"").trim();
-  if(k.platform==="mail")return "https://mail.google.com/mail/?view=cm&fs=1&to="+encodeURIComponent(c)+"&su="+encodeURIComponent(subject(k))+"&body="+encodeURIComponent(message(k));
+  if(k.platform==="mail")return "https://mail.google.com/mail/?view=cm&fs=1&to="+encodeURIComponent(c)+"&su="+encodeURIComponent(subj??subject(k))+"&body="+encodeURIComponent(body??message(k));
   if(/^https?:\/\//i.test(c))return c;
   if(k.platform==="zalo")return "https://zalo.me/"+c.replace(/[^\d+]/g,"").replace(/^\+/,"");
   return "https://www.tiktok.com/@"+c.replace(/^@/,"");
@@ -292,9 +337,13 @@ function normContact(c,p){
 /* ---------------- render ---------------- */
 function render(){
   document.querySelectorAll(".tab").forEach(b=>b.setAttribute("aria-selected",b.dataset.p===platform));
-  PLATFORMS.forEach(p=>$("n-"+p).textContent=kocs.filter(k=>k.platform===p).length);
+  const dues=dueItems();
+  PLATFORMS.forEach(p=>{const n=dues.filter(d=>d.k.platform===p).length;$("n-"+p).innerHTML=kocs.filter(k=>k.platform===p).length+(n?` <span class="alert" title="${n} mốc cần nhắc">${n}</span>`:"")});
+  document.title=(dues.length?"("+dues.length+") ":"")+"KOC Outreach";
+  renderDue(dues);
+  if(document.activeElement!==$("tpl-remind"))$("tpl-remind").value=templates.remind??REMIND_DEF;
   ["d-accts-p","d-tpl-p","d-import-p"].forEach(id=>$(id).innerHTML=`<span class="platform-badge" style="background:var(--${platform})">${PL[platform].name}</span>`);
-  $("import-hint").innerHTML=`Dán từ Excel/Google Sheets hoặc CSV, mỗi dòng 1 KOC theo cột: <code>Tên</code>, <code>${PL[platform].contact}</code>, <code>Ghi chú</code> (không bắt buộc). Dòng tiêu đề sẽ tự bỏ qua, KOC trùng liên hệ sẽ không thêm lại.`;
+  $("import-hint").innerHTML=`Dán từ Excel/Google Sheets hoặc CSV, mỗi dòng 1 KOC theo cột: <code>Tên</code>, <code>${PL[platform].contact}</code>, <code>Ghi chú</code>, <code>Hạn kịch bản</code>, <code>Hạn demo</code>, <code>Ngày air</code> (các cột sau tên và liên hệ không bắt buộc; ngày dạng 15/11 hoặc 15/11/2026). Dòng tiêu đề sẽ tự bỏ qua, KOC trùng liên hệ sẽ không thêm lại.`;
   $("import-text").placeholder={zalo:"Nguyễn An\t0912345678\tBeauty\nTrần Bình\t0987654321",tiktok:"Mai Linh\t@mailinh.review\tSkincare\nHà Vy\thttps://www.tiktok.com/@havy",mail:"Lê Minh\tminh.creator@gmail.com\tFood\nPhạm Thu\tthu.koc@gmail.com"}[platform];
   if(document.activeElement!==$("tpl"))$("tpl").value=templates[platform]??PL[platform].def;
   $("tpl-subj").hidden=$("mail-hint").hidden=platform!=="mail";
@@ -327,7 +376,23 @@ function render(){
         <a class="btn primary" href="${esc(linkFor(k))}" target="_blank" rel="noopener" data-send="${esc(k.id)}">Sao chép và mở ↗</a>
         <button class="btn ghost small" data-del="${esc(k.id)}">${confirmDel==="k:"+k.id?"Xoá thật?":"Xoá"}</button>
       </div>
+      <div class="sched">${MS.map(m=>{const due=k[m.k+"Due"],d=isDone(k,m.k),n=daysLeft(due);const cls=d?"done":(n===null?"":n<0?"over":n<=REMIND_DAYS?"today":"");return `<span class="ms ${cls}">${m.t} <b>${due?fmtD(due):"—"}</b>${d?" ✓":""}</span>`}).join("")}
+        <button class="btn small ghost" data-sched="${esc(k.id)}">${openSched===k.id?"Đóng lịch":"Sửa lịch"}</button></div>
+      ${openSched===k.id?`<div class="sched-edit">${MS.map(m=>`<div><label>Hạn ${m.w}<input type="date" value="${esc(String(k[m.k+"Due"]||"").slice(0,10))}" data-due="${esc(k.id)}|${m.k}"></label>
+        <label class="chk"><input type="checkbox" ${isDone(k,m.k)?"checked":""} data-donechk="${esc(k.id)}|${m.k}"> Đã nộp</label></div>`).join("")}</div>`:""}
     </article>`).join("");
+}
+
+function renderDue(dues){
+  const upcoming=[];kocs.forEach(k=>MS.forEach(m=>{const n=daysLeft(k[m.k+"Due"]);if(n!==null&&n>REMIND_DAYS&&n<=7&&!isDone(k,m.k))upcoming.push(1)}));
+  $("due-cnt").textContent=dues.length;$("due-cnt").classList.toggle("zero",!dues.length);
+  $("due-sub").textContent=upcoming.length?"· "+upcoming.length+" mốc khác trong 7 ngày tới":"";
+  if(!dues.length){$("due-list").innerHTML=`<p class="hint">Không có ai cần nhắc hôm nay. Bấm <b>Sửa lịch</b> ở mỗi KOC để đặt hạn kịch bản, demo và ngày air.</p>`;return}
+  $("due-list").innerHTML=dues.map(({k,m,n,due})=>{const cls=n<0?"over":n===0?"today":"soon";const last=remindLog(k)[m.k];
+    return `<div class="due ${cls}"><div class="what"><span class="platform-badge" style="background:var(--${k.platform})">${PL[k.platform].name}</span> <b>${esc(k.name)}</b> · ${m.t} hạn ${fmtD(due)} <span class="when">${whenLabel(n)}</span>
+      <div class="meta">${esc(k.contact)}${last?" · Đã nhắc "+fmtTime(last):""}</div></div>
+      <div class="btns"><a class="btn primary small" href="${esc(linkFor(k,remindMsg(k,m),"[VTPL] Nhắc hạn "+m.w))}" target="_blank" rel="noopener" data-remind="${esc(k.id)}|${m.k}">Nhắc ↗</a>
+      <button class="btn small" data-markdone="${esc(k.id)}|${m.k}">Đã nộp</button></div></div>`}).join("");
 }
 
 /* ---------------- actions ---------------- */
@@ -339,7 +404,7 @@ function fallbackCopy(text){
 function armConfirm(key){confirmDel=key;render();setTimeout(()=>{if(confirmDel===key){confirmDel=null;render()}},3000)}
 
 document.addEventListener("click",e=>{
-  const t=e.target.closest("[data-p],[data-f],[data-send],[data-del],[data-delacct]");
+  const t=e.target.closest("[data-p],[data-f],[data-send],[data-del],[data-delacct],[data-remind],[data-markdone],[data-sched]");
   if(!t)return;
   if(t.dataset.p){platform=t.dataset.p;filter="all";history.replaceState(null,"","#"+platform);render();return}
   if(t.dataset.f){filter=t.dataset.f;render();return}
@@ -353,6 +418,18 @@ document.addEventListener("click",e=>{
     setTimeout(()=>write(()=>Store.upsert("kocs",[toRow(k)])),0); // defer so the link still opens
     return;
   }
+  if(t.dataset.sched){openSched=openSched===t.dataset.sched?null:t.dataset.sched;render();return}
+  if(t.dataset.remind){
+    const [id,mk]=t.dataset.remind.split("|");const k=kocs.find(x=>x.id===id);const m=MS.find(x=>x.k===mk);if(!k||!m)return;
+    const msg=remindMsg(k,m);
+    try{navigator.clipboard.writeText(msg).then(()=>toast("Đã sao chép lời nhắc, dán vào "+PL[k.platform].name),()=>fallbackCopy(msg))}catch(_){fallbackCopy(msg)}
+    const log=remindLog(k);log[mk]=Date.now();k.remindLog=JSON.stringify(log);k.updatedAt=Date.now();
+    setTimeout(()=>write(()=>Store.upsert("kocs",[toRow(k)])),0);return;
+  }
+  if(t.dataset.markdone){
+    const [id,mk]=t.dataset.markdone.split("|");const k=kocs.find(x=>x.id===id);if(!k)return;
+    k[mk+"Done"]="1";k.updatedAt=Date.now();write(()=>Store.upsert("kocs",[toRow(k)]),"Đã đánh dấu "+MS.find(x=>x.k===mk).t+" đã nộp");return;
+  }
   if(t.dataset.del){
     const id=t.dataset.del;if(confirmDel!=="k:"+id)return armConfirm("k:"+id);
     confirmDel=null;kocs=kocs.filter(k=>k.id!==id);write(()=>Store.del("kocs",id),"Đã xoá KOC");return;
@@ -363,6 +440,10 @@ document.addEventListener("click",e=>{
   }
 });
 document.addEventListener("change",e=>{
+  const dd=e.target.closest("[data-due],[data-donechk]");
+  if(dd){const [id,mk]=(dd.dataset.due||dd.dataset.donechk).split("|");const k=kocs.find(x=>x.id===id);if(!k)return;
+    if(dd.dataset.due)k[mk+"Due"]=dd.value;else k[mk+"Done"]=dd.checked?"1":"";
+    k.updatedAt=Date.now();write(()=>Store.upsert("kocs",[toRow(k)]),"Đã lưu lịch");return}
   const s=e.target.closest("[data-status]");if(!s)return;
   const k=kocs.find(x=>x.id===s.dataset.status);if(!k)return;
   k.status=s.value;k.updatedAt=Date.now();
@@ -385,6 +466,7 @@ $("add-acct").onclick=()=>{
 };
 $("save-tpl").onclick=()=>{
   templates[platform]=$("tpl").value; if(platform==="mail")subjects.mail=$("tpl-subj").value;
+  const rm=$("tpl-remind").value;if(rm!==(templates.remind??REMIND_DEF)){templates.remind=rm;write(()=>Store.upsert("templates",[{id:"remind",text:rm,subject:""}]))}
   write(()=>Store.upsert("templates",[{id:platform,text:templates[platform],subject:platform==="mail"?subjects.mail:""}]),"Đã lưu tin nhắn mẫu");
 };
 $("save-cfg").onclick=()=>{
@@ -410,6 +492,8 @@ function parseCSVLine(line,sep){
     else if(c==='"')q=true;else if(c===sep){out.push(cur);cur=""}else cur+=c}
   out.push(cur);return out;
 }
+function toISO(v){v=String(v||"").trim();let m=v.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);if(m)return m[1]+"-"+m[2].padStart(2,"0")+"-"+m[3].padStart(2,"0");
+  m=v.match(/^(\d{1,2})[\/.-](\d{1,2})(?:[\/.-](\d{2,4}))?$/);if(!m)return "";let y=m[3]?+m[3]:new Date().getFullYear();if(y<100)y+=2000;return y+"-"+m[2].padStart(2,"0")+"-"+m[1].padStart(2,"0")}
 async function importText(text){
   const lines=text.split(/\r?\n/).map(l=>l.trim()).filter(Boolean);
   if(!lines.length){$("import-msg").textContent="Chưa có dữ liệu để nhập.";return}
@@ -419,11 +503,11 @@ async function importText(text){
   const existing=new Set(kocs.filter(k=>k.platform===platform).map(k=>normContact(k.contact,platform).toLowerCase()));
   const toAdd=[];let skipped=0;const now=Date.now();
   rows.forEach((r,i)=>{
-    let [name,contact,note]=r;if(r.length===1)contact=name;
+    let [name,contact,note,sd,dd,ad]=r;if(r.length===1)contact=name;
     contact=normContact(contact,platform);if(!contact){skipped++;return}
     if(existing.has(contact.toLowerCase())){skipped++;return}
     existing.add(contact.toLowerCase());
-    toAdd.push({id:uid()+i,platform,name:name||contact,contact,note:note||"",status:"new",sentBy:"",sentByName:"",sentAt:"",createdAt:now+i,updatedAt:now});
+    toAdd.push({id:uid()+i,platform,name:name||contact,contact,note:note||"",status:"new",sentBy:"",sentByName:"",sentAt:"",scriptDue:toISO(sd),demoDue:toISO(dd),airDue:toISO(ad),createdAt:now+i,updatedAt:now});
   });
   if(!toAdd.length){$("import-msg").textContent=`Không có KOC mới (${skipped} dòng trùng hoặc trống).`;return}
   kocs=kocs.concat(toAdd);$("import-msg").textContent=`Đang lưu ${toAdd.length} KOC…`;
