@@ -124,6 +124,17 @@ textarea{width:100%;resize:vertical;min-height:90px;line-height:1.5}
 .ms.today{background:var(--warn-bg);color:var(--warn);border-color:transparent}
 .sched-edit{grid-column:1/-1;display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px;background:var(--bg);border-radius:10px;padding:10px}
 .sched-edit label{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--muted);font-weight:600}
+.rep{grid-column:1/-1;display:flex;gap:6px;flex-wrap:wrap;align-items:center;font-size:12.5px}
+.rep .m{border:1px solid var(--line);border-radius:8px;padding:3px 8px;background:var(--bg);color:var(--muted)}
+.rep .m b{color:var(--fg);font-weight:600}
+.rep a.m{text-decoration:none}
+.rep-edit{grid-column:1/-1;display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;background:var(--bg);border-radius:10px;padding:10px}
+.rep-edit label{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--muted);font-weight:600}
+.rep-edit .wide{grid-column:1/-1}
+.rep-edit .acts2{grid-column:1/-1;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.sum{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px}
+.sum div{background:var(--bg);border-radius:10px;padding:8px 10px;font-size:12px;color:var(--muted)}
+.sum b{display:block;font-size:18px;color:var(--fg)}
 .sched-edit .chk{flex-direction:row;align-items:center;gap:6px;font-weight:500;color:var(--fg)}
 #login{max-width:380px;margin:12vh auto 0;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:28px 24px;display:flex;flex-direction:column;gap:14px}
 #login h2{margin:0;font-size:20px}
@@ -180,6 +191,7 @@ body:not(.locked) #login{display:none}
     <button class="btn" id="btn-accts">Quản lý tài khoản</button>
     <button class="btn" id="btn-tpl">Tin nhắn mẫu</button>
     <button class="btn" id="btn-import">+ Nhập KOC</button>
+    <button class="btn" id="btn-report">📊 Báo cáo</button>
     <button class="btn" id="btn-settings">⚙ Kết nối Google Sheets</button>
   </section>
 
@@ -216,6 +228,19 @@ body:not(.locked) #login{display:none}
     </div>
   </section>
 
+  <section class="drawer" id="d-report" hidden>
+    <h2>Báo cáo hiệu quả <span class="hint" id="rep-scope"></span></h2>
+    <div class="sum" id="rep-sum"></div>
+    <div class="row">
+      <select id="rep-scope-sel" aria-label="Phạm vi"><option value="all">Mọi nền tảng</option><option value="tab">Chỉ tab đang xem</option></select>
+      <select id="rep-only" aria-label="Lọc KOC"><option value="deal">KOC đã chốt / có bài đăng</option><option value="all">Tất cả KOC</option></select>
+      <button class="btn primary" id="export-report">Xuất báo cáo (Excel/CSV)</button>
+      <button class="btn" id="fetch-all">Cập nhật số liệu tất cả link</button>
+      <span class="hint" id="rep-msg"></span>
+    </div>
+    <p class="hint">Báo cáo theo chiến dịch đang chọn ở ô lọc bên dưới. Bấm <b>Báo cáo</b> ở từng KOC để nhập chi phí, code ads, SDHA, link bài đăng và số liệu. ER = (like + comment + share + save) / view. CPV = chi phí / view.</p>
+  </section>
+
   <section class="drawer" id="d-settings" hidden>
     <h2>Kết nối Google Sheets</h2>
     <p class="hint">Dán link Web App của Apps Script (dạng <code>https://script.google.com/macros/s/…/exec</code>) để lưu dữ liệu trên Google Sheets. Để trống thì dữ liệu chỉ lưu trong trình duyệt này. Link đã cài sẵn trong file sẽ được dùng mặc định.</p>
@@ -226,6 +251,10 @@ body:not(.locked) #login{display:none}
     </div>
     <div class="row">
       <button class="btn small" id="export-csv">Xuất CSV tab này</button>
+    </div>
+    <div class="row">
+      <input id="cfg-metrics" class="grow" style="min-width:240px" placeholder="Link Web App lấy số liệu (tuỳ chọn) https://script.google.com/macros/s/.../exec">
+      <button class="btn small" id="save-metrics">Lưu link số liệu</button>
       <span class="hint" id="cfg-msg"></span>
     </div>
   </section>
@@ -246,6 +275,7 @@ body:not(.locked) #login{display:none}
    đưa lên hosting.
    ===================================================================== */
 const CONFIG = {
+  METRICS_URL: "",   // link Web App lấy số liệu bài đăng (file koc_metrics.gs)
   SHEETS_URL: "https://script.google.com/macros/s/AKfycbx6WzF1cCoeZsO8PwUodHiis3XF1MkeeELyWzUufycLISpyPxY3P8B2c66JXFeEzFTdvg/exec",   // vd: "https://script.google.com/macros/s/AKfy.../exec"
   KEY: ""           // để trống: mật khẩu nhập ở màn hình đăng nhập (KEY trong Apps Script)
 };
@@ -272,10 +302,10 @@ const PLATFORMS=["zalo","tiktok","mail"];
 const MS=[{k:"script",t:"Kịch bản",w:"kịch bản"},{k:"demo",t:"Demo",w:"demo"},{k:"air",t:"Air",w:"lên bài (air)"}];
 const REMIND_DEF="Chào {ten}, mình nhắc nhẹ: hạn gửi {moc} là {ngay}. Bạn gửi giúp mình đúng hạn nhé, có gì vướng cứ báo mình. Cảm ơn bạn!";
 const REMIND_DAYS=1; // hiện trong "Cần nhắc" khi còn ≤ 1 ngày
-let openSched=null;
+let openSched=null,openRep=null;
 
 const ls={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}}};
-const cfg={url:ls.get("cfg-url")||CONFIG.SHEETS_URL||"",key:ls.get("cfg-key")??CONFIG.KEY??""};
+const cfg={url:ls.get("cfg-url")||CONFIG.SHEETS_URL||"",key:ls.get("cfg-key")??CONFIG.KEY??"",metrics:ls.get("cfg-metrics")||CONFIG.METRICS_URL||""};
 
 let platform=PLATFORMS.includes(location.hash.slice(1))?location.hash.slice(1):"zalo";
 let kocs=[],accounts=[],templates={},subjects={},filter="all",query="",confirmDel=null,pending=0;
@@ -306,9 +336,23 @@ const Store={
   upsert(sheet,rows){return this.post({action:"upsert",sheet,rows})},
   del(sheet,id){return this.post({action:"delete",sheet,id})}
 };
-function toRow(k){return {...k,status:SLABEL[k.status]||k.status}}
+const REP=[
+  {k:"cost",t:"Chi phí (VNĐ)",num:1},{k:"costNote",t:"Ghi chú chi phí",wide:1},{k:"adsCode",t:"Code ads"},{k:"sdha",t:"SDHA (quyền SD hình ảnh)",ph:"vd: 3 tháng, đến 15/02/2027"},
+  {k:"postLink",t:"Link bài đăng",wide:1,ph:"https://www.tiktok.com/@.../video/..."},{k:"postDate",t:"Ngày đăng",date:1},
+  {k:"views",t:"View",num:1},{k:"likes",t:"Like",num:1},{k:"comments",t:"Comment",num:1},{k:"shares",t:"Share",num:1},{k:"saves",t:"Save",num:1},{k:"orders",t:"Đơn hàng",num:1},{k:"revenue",t:"Doanh thu (VNĐ)",num:1}];
+const REPK=REP.map(f=>f.k).concat(["metricsAt"]);
+function toRow(k){const log=remindLog(k);const r={};REPK.forEach(f=>{if(k[f]!==undefined&&k[f]!=="")r[f]=k[f]});if(Object.keys(r).length)log._r=r;else delete log._r;
+  return {...k,remindLog:JSON.stringify(log),status:SLABEL[k.status]||k.status}}
+function withRep(k){const r=remindLog(k)._r||{};REPK.forEach(f=>{if((k[f]===undefined||k[f]==="")&&r[f]!==undefined)k[f]=r[f]});return k}
+function num(v){const n=parseFloat(String(v??"").replace(/[^\d.\-]/g,""));return isFinite(n)?n:0}
+function parseIn(v){v=String(v).trim().toLowerCase().replace(/\s/g,"");const m=v.match(/^([\d.,]+)(k|m|tr|triệu|nghìn|ng)?$/);if(m&&m[2]){const x=parseFloat(m[1].replace(",","."));return Math.round(x*({k:1e3,m:1e6,tr:1e6,"triệu":1e6,"nghìn":1e3,ng:1e3}[m[2]]))}return +v.replace(/[^\d]/g,"")||0}
+function eng(k){return num(k.likes)+num(k.comments)+num(k.shares)+num(k.saves)}
+function er(k){const v=num(k.views);return v?eng(k)/v*100:0}
+function cpv(k){const v=num(k.views);return v&&num(k.cost)?num(k.cost)/v:0}
+function short(n){n=num(n);return n>=1e6?(n/1e6).toFixed(n>=1e7?0:1)+"M":n>=1e3?(n/1e3).toFixed(n>=1e4?0:1)+"K":String(Math.round(n))}
+function vnd(n){return num(n)?Math.round(num(n)).toLocaleString("vi-VN")+"đ":"—"}
 function applyData(d){
-  kocs=(d.kocs||[]).filter(k=>k.id).map(k=>({...k,status:SKEY[k.status]||k.status||"new",sentAt:+k.sentAt||0,createdAt:+k.createdAt||0}));
+  kocs=(d.kocs||[]).filter(k=>k.id).map(k=>withRep({...k,status:SKEY[k.status]||k.status||"new",sentAt:+k.sentAt||0,createdAt:+k.createdAt||0}));
   accounts=(d.accounts||[]).filter(a=>a.id).map(a=>({...a,limit:+a.limit||0}));
   templates={};subjects={};(d.templates||[]).forEach(t=>{if(t.id){templates[t.id]=t.text;if(t.subject)subjects[t.id]=t.subject}});
   meta=d.meta||{};
@@ -373,7 +417,7 @@ function render(){
   const dues=dueItems();
   PLATFORMS.forEach(p=>{const n=dues.filter(d=>d.k.platform===p).length;$("n-"+p).innerHTML=kocs.filter(k=>k.platform===p).length+(n?` <span class="alert" title="${n} mốc cần nhắc">${n}</span>`:"")});
   document.title=(dues.length?"("+dues.length+") ":"")+"KOC Outreach";
-  renderDue(dues);
+  renderDue(dues);renderReport();
   if(document.activeElement!==$("tpl-remind"))$("tpl-remind").value=templates.remind??REMIND_DEF;
   ["d-accts-p","d-tpl-p","d-import-p"].forEach(id=>$(id).innerHTML=`<span class="platform-badge" style="background:var(--${platform})">${PL[platform].name}</span>`);
   $("import-hint").innerHTML=`Dán từ Excel/Google Sheets hoặc CSV, mỗi dòng 1 KOC theo cột: <code>Tên</code>, <code>${PL[platform].contact}</code>, <code>Ghi chú</code>, <code>Hạn kịch bản</code>, <code>Hạn demo</code>, <code>Ngày air</code> (các cột sau tên và liên hệ không bắt buộc; ngày dạng 15/11 hoặc 15/11/2026). Dòng tiêu đề sẽ tự bỏ qua, KOC trùng liên hệ sẽ không thêm lại.`;
@@ -415,12 +459,65 @@ function render(){
         <button class="btn ghost small" data-del="${esc(k.id)}">${confirmDel==="k:"+k.id?"Xoá thật?":"Xoá"}</button>
       </div>
       <div class="sched">${MS.map(m=>{const due=k[m.k+"Due"],d=isDone(k,m.k),n=daysLeft(due);const cls=d?"done":(n===null?"":n<0?"over":n<=REMIND_DAYS?"today":"");return `<span class="ms ${cls}">${m.t} <b>${due?fmtD(due):"—"}</b>${d?" ✓":""}</span>`}).join("")}
-        <button class="btn small ghost" data-sched="${esc(k.id)}">${openSched===k.id?"Đóng lịch":"Sửa lịch"}</button></div>
+        <button class="btn small ghost" data-sched="${esc(k.id)}">${openSched===k.id?"Đóng lịch":"Sửa lịch"}</button>
+        <button class="btn small ghost" data-rep="${esc(k.id)}">${openRep===k.id?"Đóng báo cáo":"Báo cáo"}</button></div>
+      ${repLine(k)}
       ${openSched===k.id?`<div class="sched-edit">${MS.map(m=>`<div><label>Hạn ${m.w}<input type="date" value="${esc(String(k[m.k+"Due"]||"").slice(0,10))}" data-due="${esc(k.id)}|${m.k}"></label>
         <label class="chk"><input type="checkbox" ${isDone(k,m.k)?"checked":""} data-donechk="${esc(k.id)}|${m.k}"> Đã nộp</label></div>`).join("")}</div>`:""}
+      ${openRep===k.id?`<div class="rep-edit">${REP.map(f=>`<label class="${f.wide?"wide":""}">${f.t}<input ${f.date?'type="date"':f.num?'inputmode="decimal"':""} value="${esc(f.date?String(k[f.k]||"").slice(0,10):(k[f.k]??""))}" placeholder="${esc(f.ph||"")}" data-repf="${esc(k.id)}|${f.k}"></label>`).join("")}
+        <div class="acts2"><button class="btn small primary" data-fetch="${esc(k.id)}">Lấy số liệu từ link</button>${k.postLink?`<a class="btn small" href="${esc(k.postLink)}" target="_blank" rel="noopener">Mở bài ↗</a>`:""}<span class="hint">${k.metricsAt?"Số liệu cập nhật "+fmtTime(k.metricsAt):"Chưa có số liệu"}</span></div></div>`:""}
     </article>`).join("")+(allRows.length>rows.length?`<div class="more"><button class="btn" data-more="1">Xem thêm (${allRows.length-rows.length} còn lại)</button></div>`:"");
 }
 
+function repLine(k){
+  if(!k.postLink&&!num(k.cost)&&!k.adsCode&&!k.sdha)return "";
+  const p=[];
+  if(k.postLink)p.push(`<a class="m" href="${esc(k.postLink)}" target="_blank" rel="noopener">▶ Bài đăng ↗</a>`);
+  if(num(k.views))p.push(`<span class="m"><b>${short(k.views)}</b> view</span><span class="m"><b>${short(k.likes)}</b> like · <b>${short(k.comments)}</b> cmt · <b>${short(k.shares)}</b> share</span><span class="m">ER <b>${er(k).toFixed(1)}%</b></span>`);
+  if(num(k.cost))p.push(`<span class="m">Chi phí <b>${vnd(k.cost)}</b>${cpv(k)?" · CPV "+cpv(k).toFixed(0)+"đ":""}</span>`);
+  if(k.adsCode)p.push(`<span class="m">Code ads <b>${esc(k.adsCode)}</b></span>`);
+  if(k.sdha)p.push(`<span class="m">SDHA <b>${esc(k.sdha)}</b></span>`);
+  return `<div class="rep">${p.join("")}</div>`;
+}
+function repRows(){
+  const tabOnly=$("rep-scope-sel").value==="tab",only=$("rep-only").value;
+  return kocs.filter(k=>(!tabOnly||k.platform===platform)&&(camp==="all"||(camp==="_none"?!k.campaign:k.campaign===camp))
+    &&(only==="all"||k.status==="agreed"||k.postLink||num(k.cost)))
+    .sort((a,b)=>String(a.platform).localeCompare(b.platform)||a.createdAt-b.createdAt);
+}
+function renderReport(){
+  if($("d-report").hidden)return;
+  const rows=repRows(),posted=rows.filter(k=>k.postLink);
+  const S=f=>rows.reduce((s,k)=>s+num(k[f]),0);
+  const cost=S("cost"),views=S("views"),e=rows.reduce((s,k)=>s+eng(k),0);
+  $("rep-scope").textContent="· "+(camp==="all"?"Tất cả chiến dịch":camp==="_none"?"Tự thêm":camp);
+  $("rep-sum").innerHTML=[["KOC",rows.length],["Đã đăng bài",posted.length],["Tổng chi phí",vnd(cost)],["Tổng view",short(views)],["Tổng tương tác",short(e)],
+    ["ER trung bình",views?(e/views*100).toFixed(2)+"%":"—"],["CPV",views&&cost?(cost/views).toFixed(0)+"đ":"—"],["CPE",e&&cost?(cost/e).toFixed(0)+"đ":"—"],
+    ["Đơn hàng",short(S("orders"))],["Doanh thu",vnd(S("revenue"))]].map(([t,v])=>`<div>${t}<b>${v}</b></div>`).join("");
+}
+function exportReport(){
+  const rows=repRows();if(!rows.length){$("rep-msg").textContent="Không có KOC nào trong phạm vi này.";return}
+  const q=v=>'"'+String(v??"").replace(/"/g,'""')+'"';
+  const head=["STT","Nền tảng","Chiến dịch","Tên KOC","Liên hệ","Kênh","Follow","Tình trạng","Chi phí (VNĐ)","Ghi chú chi phí","Code ads","SDHA","Link bài đăng","Ngày đăng","View","Like","Comment","Share","Save","Tổng tương tác","ER (%)","CPV (VNĐ)","CPE (VNĐ)","Đơn hàng","Doanh thu (VNĐ)","ROAS","Cập nhật số liệu","Ghi chú"];
+  const lines=rows.map((k,i)=>{const e=eng(k),c=num(k.cost);return [i+1,PL[k.platform]?.name||k.platform,k.campaign,k.name,k.contact,k.link||k.handle,k.followers,SLABEL[k.status],c||"",k.costNote,k.adsCode,k.sdha,k.postLink,fmtD(k.postDate)?String(k.postDate).slice(0,10):"",
+    num(k.views)||"",num(k.likes)||"",num(k.comments)||"",num(k.shares)||"",num(k.saves)||"",e||"",num(k.views)?er(k).toFixed(2):"",cpv(k)?cpv(k).toFixed(0):"",e&&c?(c/e).toFixed(0):"",num(k.orders)||"",num(k.revenue)||"",c&&num(k.revenue)?(num(k.revenue)/c).toFixed(2):"",
+    k.metricsAt?new Date(+k.metricsAt).toLocaleString("vi-VN"):"",k.note].map(q).join(",")});
+  const S=f=>rows.reduce((s,k)=>s+num(k[f]),0),cost=S("cost"),views=S("views"),e=rows.reduce((s,k)=>s+eng(k),0);
+  const total=["","TỔNG","","","","","","",cost||"","","","","","",views||"",S("likes")||"",S("comments")||"",S("shares")||"",S("saves")||"",e||"",views?(e/views*100).toFixed(2):"",views&&cost?(cost/views).toFixed(0):"",e&&cost?(cost/e).toFixed(0):"",S("orders")||"",S("revenue")||"",cost&&S("revenue")?(S("revenue")/cost).toFixed(2):"","",""].map(q).join(",");
+  const d=new Date(),stamp=d.getFullYear()+String(d.getMonth()+1).padStart(2,"0")+String(d.getDate()).padStart(2,"0");
+  const a=document.createElement("a");a.href=URL.createObjectURL(new Blob(["\ufeff"+[head.map(q).join(",")].concat(lines,[total]).join("\n")],{type:"text/csv"}));
+  a.download="BaoCao_KOC_"+(camp==="all"?"TatCa":camp).replace(/[^\w\-]+/g,"_")+"_"+stamp+".csv";a.click();
+  $("rep-msg").textContent="Đã xuất "+rows.length+" KOC.";
+}
+async function fetchMetrics(k){
+  if(!k.postLink)throw new Error("chưa có link bài đăng");
+  if(!cfg.metrics)throw new Error("chưa cài link Web App lấy số liệu (⚙ Kết nối Google Sheets)");
+  const r=await fetch(cfg.metrics+"?url="+encodeURIComponent(k.postLink));const j=await r.json();
+  if(j.error)throw new Error(j.error);
+  ["views","likes","comments","shares","saves"].forEach(f=>{if(j[f]!==undefined&&j[f]!==null&&j[f]!=="")k[f]=j[f]});
+  if(j.postDate&&!k.postDate)k.postDate=j.postDate;
+  k.metricsAt=Date.now();k.updatedAt=Date.now();return j;
+}
 function renderDue(dues){
   const upcoming=[];kocs.forEach(k=>MS.forEach(m=>{const n=daysLeft(k[m.k+"Due"]);if(n!==null&&n>REMIND_DAYS&&n<=7&&!isDone(k,m.k))upcoming.push(1)}));
   $("due-cnt").textContent=dues.length;$("due-cnt").classList.toggle("zero",!dues.length);
@@ -442,7 +539,7 @@ function fallbackCopy(text){
 function armConfirm(key){confirmDel=key;render();setTimeout(()=>{if(confirmDel===key){confirmDel=null;render()}},3000)}
 
 document.addEventListener("click",e=>{
-  const t=e.target.closest("[data-more],[data-p],[data-f],[data-send],[data-del],[data-delacct],[data-remind],[data-markdone],[data-sched]");
+  const t=e.target.closest("[data-more],[data-p],[data-f],[data-send],[data-del],[data-delacct],[data-remind],[data-markdone],[data-sched],[data-rep],[data-fetch]");
   if(!t)return;
   if(t.dataset.more){shown+=100;render();return}
   if(t.dataset.p){platform=t.dataset.p;filter="all";shown=100;history.replaceState(null,"","#"+platform);render();return}
@@ -458,6 +555,9 @@ document.addEventListener("click",e=>{
     return;
   }
   if(t.dataset.sched){openSched=openSched===t.dataset.sched?null:t.dataset.sched;render();return}
+  if(t.dataset.rep){openRep=openRep===t.dataset.rep?null:t.dataset.rep;render();return}
+  if(t.dataset.fetch){const k=kocs.find(x=>x.id===t.dataset.fetch);if(!k)return;t.disabled=true;t.textContent="Đang lấy…";
+    fetchMetrics(k).then(j=>write(()=>Store.upsert("kocs",[toRow(k)]),"Đã cập nhật số liệu"+(j.partial?" (một phần: "+j.partial+")":""))).catch(err=>{toast("Không lấy được số liệu: "+err.message+". Bạn có thể nhập tay.");render()});return}
   if(t.dataset.remind){
     const [id,mk]=t.dataset.remind.split("|");const k=kocs.find(x=>x.id===id);const m=MS.find(x=>x.k===mk);if(!k||!m)return;
     const msg=remindMsg(k,m);
@@ -479,6 +579,10 @@ document.addEventListener("click",e=>{
   }
 });
 document.addEventListener("change",e=>{
+  const rf=e.target.closest("[data-repf]");
+  if(rf){const [id,f]=rf.dataset.repf.split("|");const k=kocs.find(x=>x.id===id);if(!k)return;const def=REP.find(x=>x.k===f);
+    k[f]=def&&def.num?(rf.value.trim()===""?"":parseIn(rf.value)):rf.value.trim();if(["views","likes","comments","shares","saves"].includes(f))k.metricsAt=Date.now();
+    k.updatedAt=Date.now();write(()=>Store.upsert("kocs",[toRow(k)]),"Đã lưu "+(def?def.t:f));return}
   const dd=e.target.closest("[data-due],[data-donechk]");
   if(dd){const [id,mk]=(dd.dataset.due||dd.dataset.donechk).split("|");const k=kocs.find(x=>x.id===id);if(!k)return;
     if(dd.dataset.due)k[mk+"Due"]=dd.value;else k[mk+"Done"]=dd.checked?"1":"";
@@ -494,11 +598,23 @@ $("camp-sel").addEventListener("change",e=>{camp=e.target.value;shown=100;render
 $("sync-now").onclick=()=>syncNow(true);
 document.addEventListener("click",e=>{if(!e.target.closest("#docs"))$("docs").open=false});
 
-function toggle(id){["d-accts","d-tpl","d-import","d-settings"].forEach(d=>$(d).hidden=d===id?!$(d).hidden:true)}
+function toggle(id){["d-accts","d-tpl","d-import","d-settings","d-report"].forEach(d=>$(d).hidden=d===id?!$(d).hidden:true)}
 $("btn-accts").onclick=()=>toggle("d-accts");
 $("btn-tpl").onclick=()=>toggle("d-tpl");
 $("btn-import").onclick=()=>toggle("d-import");
-$("btn-settings").onclick=()=>{toggle("d-settings");$("cfg-url").value=cfg.url;$("cfg-key").value=cfg.key};
+$("btn-settings").onclick=()=>{toggle("d-settings");$("cfg-url").value=cfg.url;$("cfg-key").value=cfg.key;$("cfg-metrics").value=cfg.metrics};
+$("btn-report").onclick=()=>{toggle("d-report");renderReport()};
+$("rep-scope-sel").onchange=$("rep-only").onchange=renderReport;
+$("export-report").onclick=exportReport;
+$("save-metrics").onclick=()=>{const u=$("cfg-metrics").value.trim();if(u&&!/^https:\/\/script\.google\.com\/macros\/s\/.+\/exec$/.test(u)){$("cfg-msg").textContent="Link số liệu phải có dạng https://script.google.com/macros/s/…/exec";return}
+  cfg.metrics=u;ls.set("cfg-metrics",u);$("cfg-msg").textContent=u?"Đã lưu link lấy số liệu.":"Đã bỏ link lấy số liệu."};
+$("fetch-all").onclick=async()=>{const rows=repRows().filter(k=>k.postLink);if(!rows.length){$("rep-msg").textContent="Chưa KOC nào có link bài đăng.";return}
+  if(!cfg.metrics){$("rep-msg").textContent="Chưa cài link Web App lấy số liệu (xem ⚙ Kết nối Google Sheets).";return}
+  let ok=0,fail=[];$("fetch-all").disabled=true;
+  for(const k of rows){$("rep-msg").textContent=`Đang lấy ${ok+fail.length+1}/${rows.length}: ${k.name}…`;
+    try{await fetchMetrics(k);ok++}catch(e){fail.push(k.name)}}
+  const done=rows.filter(k=>k.metricsAt);await write(()=>Store.upsert("kocs",done.map(toRow)));
+  $("fetch-all").disabled=false;$("rep-msg").textContent=`Đã cập nhật ${ok}/${rows.length}`+(fail.length?`. Không lấy được: ${fail.join(", ")} (nhập tay)`:"");render()};
 
 $("add-acct").onclick=()=>{
   const name=$("new-acct").value.trim();if(!name)return;
